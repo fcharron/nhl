@@ -10,6 +10,7 @@ import urllib2
 import re
 import logging
 
+NHL_BASE_URL = "http://www.nhl.com"
 
 
 PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={season}&gameType={gametype}&team=&position={position}&country=&status=&viewName={viewname}'
@@ -48,7 +49,11 @@ class StatsReader(object):
             
             row = {}        
             for d in range(len(self.fieldnames)):
-                row[self.fieldnames[d]] = tds[d].string.encode('utf-8')
+                val = tds[d].string
+                if val:
+                    row[self.fieldnames[d]] = val.encode('utf-8')
+                else:
+                    row[self.fieldnames[d]] = None
             yield row
 
 
