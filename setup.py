@@ -7,6 +7,7 @@ setup(name='pynhl',
       author='Peter Stark',
       author_email='peterstark72@gmail.com',
       url='https://github.com/peterstark72/pynhl',
+      requires=['bs4'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',

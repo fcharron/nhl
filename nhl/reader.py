@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 '''reader.py
 
-A module for reading stats from nhl.com
+A module for reading stats from nhl.com. 
+
 '''
 
 from bs4 import BeautifulSoup
@@ -19,6 +20,12 @@ PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={season}&gameT
 
 class NhlException(Exception):
     pass
+
+
+
+
+def get_nhl_id_from_url(url):    
+    return url.split("id=")[0]
 
 
 def get_soup(url):
@@ -45,15 +52,16 @@ class StatsReader(object):
         '''Yields one row from the table as a list'''
         for tr in stats_table.find('tbody').findAll('tr'):
             
-            tds = tr.findAll('td')
+            tds = tr.findAll('td') 
             
-            row = {}        
+            row = []      
             for d in range(len(self.fieldnames)):
-                val = tds[d].string
-                if val:
-                    row[self.fieldnames[d]] = val.encode('utf-8')
+                value = tds[d].string    
+                if value:
+                    row.append(value.encode('utf-8'))
                 else:
-                    row[self.fieldnames[d]] = None
+                    row.append(None) #Empty cells
+
             yield row
 
 
