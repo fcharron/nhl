@@ -116,7 +116,7 @@ GAMETYPE_MAP = {
 
 class BiosReader(StatsReader):
     '''Reads the Bios Report table from nhl.com''' 
-    fieldnames = ('Number','Player','Team','Pos','DOB','BirthCity','S_P', 'Ctry', 'HT','Wt','S','Draft',' RndOvrl','Rk','GP','G','A','Pts','PlusMinus', 'PIM','TOI_G')
+    fieldnames = ('Number','Player','Team','Pos','DOB','BirthCity','S_P', 'Ctry', 'HT','Wt','S','Draft',' Rnd','Ovrl','Rk','GP','G','A','Pts','PlusMinus', 'PIM','TOI_G')
 
     def __init__(self, season, gametype):
         self._url = PLAYER_STATS_URL.format(season=season, gametype=GAMETYPE_MAP[gametype], viewname='bios', position='S')
