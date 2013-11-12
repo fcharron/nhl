@@ -125,7 +125,7 @@ class BiosReader(StatsReader):
 
 class SummaryReader(StatsReader):
     '''Reads the Summary Report table from nhl.com''' 
-    fieldnames = ('Number','Player','Team','Pos', 'GP','G','A','P','PlusmMinus', 'PIM','PP','SH','GW','OT','S', 'S_Perc','TOI_G', 'Sft_G'   'FO_Perc')
+    fieldnames = ('Number','Player','Team','Pos', 'GP','G','A','P','PlusmMinus', 'PIM','PP','SH','GW','OT','S', 'S_Perc','TOI_G', 'Sft_G','FO_Perc')
 
     def __init__(self, season, gametype):
         self._url = PLAYER_STATS_URL.format(season=season, gametype=GAMETYPE_MAP[gametype], viewname='summary', position='S')

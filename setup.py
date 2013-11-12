@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='pynhl',
-      version='1.0.0',
+      version='1.0.1',
       packages=['nhl'],
       scripts=['nhl2csv.py'],
       description='Reads stats from nhl.com',

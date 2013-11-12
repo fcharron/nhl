@@ -3,7 +3,7 @@
 
 import nhl
 
-reader = nhl.reader("20122013", gametype="playoff", report='bios')
+reader = nhl.reader("20132014", gametype="regular", report='summary')
 
 print reader.fieldnames
 
