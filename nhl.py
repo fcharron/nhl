@@ -1,8 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''reader.py
+'''nhl.py
 
-A module for reading stats from nhl.com. 
+A module for reading player stats from nhl.com. 
+
+Example usage: 
+
+import nhl
+
+
+nhl_reader = reader("20132014", gametype="regular", report='bios')
+
+for player in nhl_reader:
+    print player
+
 
 '''
 
@@ -11,21 +22,14 @@ import urllib2
 import re
 import logging
 
+
 NHL_BASE_URL = "http://www.nhl.com"
-
-
 PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={season}&gameType={gametype}&team=&position={position}&country=&status=&viewName={viewname}'
 
 
 
 class NhlException(Exception):
     pass
-
-
-
-
-def get_nhl_id_from_url(url):    
-    return url.split("id=")[0]
 
 
 def get_soup(url):
@@ -46,7 +50,11 @@ class StatsReader(object):
     '''Abstract class for reading a paginated table of stats from nhl.com. Different kinds of tables are implemented by sub classes'''
 
     number_of_rows = 0    
-    fieldnames = ()
+    fields = ()
+
+    def fieldnames(self):
+        return [field[0] for field in self.fields]
+
 
     def _readrow(self, stats_table):
         '''Yields one row from the table as a list'''
@@ -54,13 +62,14 @@ class StatsReader(object):
             
             tds = tr.findAll('td') 
             
-            row = []      
-            for d in range(len(self.fieldnames)):
-                value = tds[d].string    
+            row = {}     
+            for i, d in enumerate(self.fields):
+                value = tds[i].string    
+
                 if value:
-                    row.append(value.encode('utf-8'))
+                    row[d[0]] = d[1](value)
                 else:
-                    row.append(None) #Empty cells
+                    row[d[0]] = None #Empty cells
 
             yield row
 
@@ -107,6 +116,11 @@ class StatsReader(object):
                 yield row
 
 
+    def execute(self):
+        '''Returns the stats as a list'''
+        return list(self)
+
+
 
 GAMETYPE_MAP = {
     'regular' : 2,
@@ -114,9 +128,18 @@ GAMETYPE_MAP = {
 }
 
 
+def yesno(v):
+    if v=='Y':
+        return True
+    elif v=='N':
+        return False
+    else:
+        return None
+
+
 class BiosReader(StatsReader):
     '''Reads the Bios Report table from nhl.com''' 
-    fieldnames = ('Number','Player','Team','Pos','DOB','BirthCity','S_P', 'Ctry', 'HT','Wt','S','Draft',' Rnd','Ovrl','Rk','GP','G','A','Pts','PlusMinus', 'PIM','TOI_G')
+    fields = (('Number',int),('Player',unicode),('Team',unicode),('Pos',unicode),('DOB',unicode),('BirthCity',unicode),('S_P',unicode), ('Ctry',unicode), ('HT',int),('Wt',int),('S',unicode),('Draft',unicode),('Rnd',int),('Ovrl',int),('Rk',yesno),('GP',int),('G',int),('A',int),('Pts',int),('PlusMinus',int),('PIM',int),('TOI_G',unicode))
 
     def __init__(self, season, gametype):
         self._url = PLAYER_STATS_URL.format(season=season, gametype=GAMETYPE_MAP[gametype], viewname='bios', position='S')
@@ -125,7 +148,9 @@ class BiosReader(StatsReader):
 
 class SummaryReader(StatsReader):
     '''Reads the Summary Report table from nhl.com''' 
-    fieldnames = ('Number','Player','Team','Pos', 'GP','G','A','P','PlusmMinus', 'PIM','PP','SH','GW','OT','S', 'S_Perc','TOI_G', 'Sft_G','FO_Perc')
+
+    fields = (('Number',int),('Player', unicode),('Team',unicode),('Pos',unicode),('GP',int),('G',int),('A',int),('P',int),('PlusMinus',int),('PIM',int),('PP',int),('SH',int),('GW',int),('OT',int),('S',int), ('S_Perc',float),('TOI_G',unicode),('Sft_G',float),('FO_Perc',float))
+
 
     def __init__(self, season, gametype):
         self._url = PLAYER_STATS_URL.format(season=season, gametype=GAMETYPE_MAP[gametype], viewname='summary', position='S')
@@ -134,12 +159,13 @@ class SummaryReader(StatsReader):
 
 
 READER_FACTORY_MAP = {
-    'bios' : BiosReader,
+    'bios' : BiosReader, 
     'summary' : SummaryReader
-}
+    }
 
 
-def reader(season, gametype='regular', report='bios'):
+
+def reader(season, gametype='regular', report='summary'):
     '''Returns a StatsReader iterator. 
 
     Arguments:
@@ -151,5 +177,11 @@ def reader(season, gametype='regular', report='bios'):
 
 
 
+if __name__ == '__main__':
 
+    nhl_reader = reader("20132014", gametype="regular", report='bios')
 
+    print nhl_reader.fieldnames()
+
+    for player in nhl_reader:
+        print player

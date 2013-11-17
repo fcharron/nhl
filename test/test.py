@@ -6,7 +6,6 @@ import unittest
 import nhl
 
 
-
 class TestNhl(unittest.TestCase):
 
     def test_reader_summary(self):
