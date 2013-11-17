@@ -8,7 +8,6 @@ Example usage:
 
 import nhl
 
-
 nhl_reader = reader("20132014", gametype="regular", report='bios')
 
 for player in nhl_reader:
@@ -45,15 +44,14 @@ def get_soup(url):
     return soup
 
 
-
 class StatsReader(object):
     '''Abstract class for reading a paginated table of stats from nhl.com. Different kinds of tables are implemented by sub classes'''
 
-    number_of_rows = 0    
-    fields = ()
+    _fields = ()
 
+    @property
     def fieldnames(self):
-        return [field[0] for field in self.fields]
+        return [field[0] for field in self._fields]
 
 
     def _readrow(self, stats_table):
@@ -63,7 +61,7 @@ class StatsReader(object):
             tds = tr.findAll('td') 
             
             row = {}     
-            for i, d in enumerate(self.fields):
+            for i, d in enumerate(self._fields):
                 value = tds[i].string    
 
                 if value:
@@ -84,6 +82,10 @@ class StatsReader(object):
         pages = soup.find('div', 'pages')
         all_anchors = pages.find_all("a")
         number_of_anchors = len(all_anchors)
+
+        #Check in case there are no pages
+        if number_of_anchors < 1:
+            raise StopIteration
         
         #Get the last page anchor
         last_anchor = all_anchors[number_of_anchors-1]
@@ -112,7 +114,6 @@ class StatsReader(object):
                 raise StopIteration
             
             for row in self._readrow(stats_table):
-                self.number_of_rows += 1
                 yield row
 
 
@@ -139,7 +140,7 @@ def yesno(v):
 
 class BiosReader(StatsReader):
     '''Reads the Bios Report table from nhl.com''' 
-    fields = (('Number',int),('Player',unicode),('Team',unicode),('Pos',unicode),('DOB',unicode),('BirthCity',unicode),('S_P',unicode), ('Ctry',unicode), ('HT',int),('Wt',int),('S',unicode),('Draft',unicode),('Rnd',int),('Ovrl',int),('Rk',yesno),('GP',int),('G',int),('A',int),('Pts',int),('PlusMinus',int),('PIM',int),('TOI_G',unicode))
+    _fields = (('Number',int),('Player',unicode),('Team',unicode),('Pos',unicode),('DOB',unicode),('BirthCity',unicode),('S_P',unicode), ('Ctry',unicode), ('HT',int),('Wt',int),('S',unicode),('Draft',unicode),('Rnd',int),('Ovrl',int),('Rk',yesno),('GP',int),('G',int),('A',int),('Pts',int),('PlusMinus',int),('PIM',int),('TOI_G',unicode))
 
     def __init__(self, season, gametype):
         self._url = PLAYER_STATS_URL.format(season=season, gametype=GAMETYPE_MAP[gametype], viewname='bios', position='S')
@@ -149,7 +150,7 @@ class BiosReader(StatsReader):
 class SummaryReader(StatsReader):
     '''Reads the Summary Report table from nhl.com''' 
 
-    fields = (('Number',int),('Player', unicode),('Team',unicode),('Pos',unicode),('GP',int),('G',int),('A',int),('P',int),('PlusMinus',int),('PIM',int),('PP',int),('SH',int),('GW',int),('OT',int),('S',int), ('S_Perc',float),('TOI_G',unicode),('Sft_G',float),('FO_Perc',float))
+    _fields = (('Number',int),('Player', unicode),('Team',unicode),('Pos',unicode),('GP',int),('G',int),('A',int),('P',int),('PlusMinus',int),('PIM',int),('PP',int),('SH',int),('GW',int),('OT',int),('S',int), ('S_Perc',float),('TOI_G',unicode),('Sft_G',float),('FO_Perc',float))
 
 
     def __init__(self, season, gametype):
@@ -179,9 +180,12 @@ def reader(season, gametype='regular', report='summary'):
 
 if __name__ == '__main__':
 
-    nhl_reader = reader("20132014", gametype="regular", report='bios')
+    nhl_reader = reader("20132014", gametype="regular", report='summary')
 
-    print nhl_reader.fieldnames()
+    print nhl_reader.fieldnames
 
     for player in nhl_reader:
         print player
+
+
+    
