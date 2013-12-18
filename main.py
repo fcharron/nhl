@@ -1,21 +1,12 @@
 #!/usr/bin/env 
         
-
-import nhl
-
-
-reader = nhl.skater_bios_reader("20132014", "regular")
-
-for n, skater in enumerate(reader, 1):
-    print n, skater
+from nhl import playerstats
 
 
-'''
-petfor = nhl.career_reader(8458520, "regular")
+reader = playerstats.reader("20132014", "regular", "skaters", "summary")
+for s in reader.run(7):
+    print s
 
-for stat in petfor.run():
-    print stat.season, stat
-'''
 
 
 
