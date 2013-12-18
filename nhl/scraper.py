@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 '''scraper.py
 
+Utility functions for reading tables. 
+
 '''
 
 from bs4 import BeautifulSoup
@@ -27,8 +29,14 @@ def get_soup(url):
 
 
 def get_qp_from_href(row, name, href_string):
-    '''Returns a query parameter value from the href value'''
+    '''Returns a query parameter value from the href value
 
+    Example:
+    With href_string = '/ice/player.htm?id=8471675'
+
+    The function returns 8471675
+
+    '''
     p = "^" + href_string
     anchor_tag = row.find(href=re.compile(p))  
 
@@ -46,7 +54,6 @@ def get_urls_for_paginated_table(url):
     ''' 
 
     #Load the first page
-
     soup = get_soup(url)
 
     #Get all anchors with page links
@@ -70,15 +77,3 @@ def get_urls_for_paginated_table(url):
 
     return urls          
 
-
-if __name__ == '__main__':
-
-    url = "http://www.nhl.com/ice/playerstats.htm?season=20132014&gameType=2&team=&position=S&country=&status=&viewName=summary"
-
-    print get_urls_for_paginated_table(url)
-
-
-    row = BeautifulSoup("""<tr><td colspan="1" rowspan="1">1</td><td colspan="1" rowspan="1" style="text-align: left;"><a href="/ice/player.htm?id=8471675">Sidney Crosby</a></td><td colspan="1" rowspan="1" style="text-align: center;"><a style="border-bottom:1px dotted;" onclick="loadTeamSpotlight(jQuery(this));" rel="PIT" href="javascript:void(0);">PIT</a></td><td colspan="1" rowspan="1" style="text-align: center;">C</td><td colspan="1" rowspan="1" style="center">35</td><td colspan="1" rowspan="1" style="center">19</td><td colspan="1" rowspan="1" style="center">28</td><td colspan="1" rowspan="1" style="center" class="active">47</td><td colspan="1" rowspan="1" style="center">+4</td><td colspan="1" rowspan="1" style="center">20</td><td colspan="1" rowspan="1" style="center">6</td><td colspan="1" rowspan="1" style="center">0</td><td colspan="1" rowspan="1" style="center">4</td><td colspan="1" rowspan="1" style="center">1</td><td colspan="1" rowspan="1" style="center">117</td><td colspan="1" rowspan="1" style="center">16.2</td><td colspan="1" rowspan="1" style="center">22:14</td><td colspan="1" rowspan="1" style="center">23.9</td><td colspan="1" rowspan="1" style="center">51.2</td></tr>""")
-
-
-    print get_qp_from_href(row, "id", "/ice/player.htm")

@@ -14,12 +14,10 @@ import scraper
 PLAYER_URL = "http://www.nhl.com/ice/player.htm?id={}"
 
 
-class GoalieCareerStatsRow(namedtuple("GoalieCareerStatsRow", "season, team, gp, g, w, l, t, ot, so, ga, sa, svs, gaa, min, id")):
-    pass
+GoalieCareerStatsRow = namedtuple("GoalieCareerStatsRow", "season, team, gp, g, w, l, t, ot, so, ga, sa, svs, gaa, min, id")
 
+SkaterCareerStatsRow = namedtuple("SkaterCareerStatsRow", "season, team, gp, g, a, p, plusminus, pim, ppg, shg, gwg, s, s_perc, id")
 
-class SkaterCareerStatsRow(namedtuple("SkaterCareerStatsRow", "season, team, gp, g, a, p, plusminus, pim, ppg, shg, gwg, s, s_perc, id")):
-    pass
 
 
 class CareerStatsReader(reader.AbstractReader):
