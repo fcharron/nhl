@@ -32,6 +32,9 @@ class CareerStatsReader(reader.AbstractReader):
     def __init__(self, nhl_id, gametype):
         self.nhl_id = nhl_id
         self.gametype = gametype
+
+        url = PLAYER_URL.format(str(nhl_id))
+        self.soup = scraper.get_soup(url)
         
         self.rowdata = SkaterCareerStatsRow
 
@@ -41,14 +44,18 @@ class CareerStatsReader(reader.AbstractReader):
 
 
 
+    def _read_tombstone(self):
+
+        tombstone = self.soup.find(id="tombstone")
+        print tombstone
+
+
+
+
     def readtables(self):
         '''Returns list of tables to be read'''
 
-        url = PLAYER_URL.format(str(self.nhl_id))
-        
-        soup = scraper.get_soup(url)
-
-        table_header = soup.find("h3",
+        table_header = self.soup.find("h3",
                         text=self._tables_headers[self.gametype])
 
         return [table_header.next_sibling] #We only have one table
