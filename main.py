@@ -1,13 +1,12 @@
 #!/usr/bin/env 
         
 
-from nhl import playerstats
+import nhl
 
+reader = nhl.skater_bios_reader("20132014", "regular")
 
-reader = playerstats.skater_bios_reader("20132014", "regular")
-
-for skater in reader.run(42):
-    print u"{}({}) : {}".format(skater.player, skater.id, skater.pts)
+for skater in reader.run(7):
+    print skater
 
 
 
