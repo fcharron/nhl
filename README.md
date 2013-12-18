@@ -1,25 +1,20 @@
-PyNHL
-=====
+The Python NHL Reader
+======================
 
 A Python module for getting player stats from nhl.com. 
-
-Install using [PIP](https://pypi.python.org/pypi/pip): 
-```python
-pip install pynhl
-```
 
 
 ## Basic Usage
 
 ```python
-import nhl
+from nhl import playerstats
 
-reader = nhl.reader("20122013", gametype="playoff", report='bios')
 
-print reader.fieldnames()
+reader = playerstats.skater_bios_reader("20132014", "regular")
 
-for player in reader:
-    print player
+for skater in reader.run(42):
+    print u"{}({}) : {}".format(skater.player, skater.id, skater.pts)
+
 ```        
 
 
@@ -29,15 +24,6 @@ It reads from the [Player Stats](http://www.nhl.com/ice/playerstats.htm?season=2
 
 It reads the "Summary" and "Bios" reports. 
 
-It reads "All Skaters", not goalies stats. 
+It reads "All Skaters" and "Goalies". 
 
-
-## The nhl2.csv.py Tool
-
-Useful for just getting a CSV file of players stats.
-
-```
-usage: nhl2csv.py [-h] [-p] [--headerrow] -s season [-o OUTFILE]
-                  [--report {bios,summary}]
-```
 
