@@ -9,18 +9,17 @@ A Python module for getting player stats from nhl.com.
 ```python
 import nhl
 
-
 reader = nhl.skater_bios_reader("20132014", "regular")
 
 for skater in reader.run(42):
     print u"{}({}) : {}".format(skater.player, skater.id, skater.pts)
-
 ```        
 
 
 ## Player Stats Bios
 
-To read the Player Stats Bios [table](http://www.nhl.com/ice/playerstats.htm?season=20132014&gameType=2&team=&position=S&country=&status=&viewName=bios#) gives:
+To get [player statistics](http://www.nhl.com/ice/playerstats.htm?season=20132014&gameType=2&team=&position=S&country=&status=&viewName=bios#), use ```skater_bios_reader```for skaters and ```goalie_bios_reader```for goalies.  
+
 
 ```
 import nhl
