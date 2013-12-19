@@ -1,5 +1,6 @@
 
 
+import logging 
 
 class TableRowsIterator(object): 
 
@@ -14,8 +15,13 @@ class TableRowsIterator(object):
             if row_counter == limit:
                 raise StopIteration
             
-            yield self.get_rowmap()._make(row)
-            
+            try:
+                rowdata = self.row_datamap._make(row)
+            except Exception as e:
+                logging.error("Failed to read table row {} : {}".format(row, e.message))
+                raise StopIteration
+
+            yield rowdata            
             row_counter += 1
 
     

@@ -2,7 +2,7 @@
 
 import re
 import logging
-
+import hashlib 
 
 from collections import namedtuple
 
@@ -10,31 +10,40 @@ import scraper
 import reader
 
 
-SkaterSummary = namedtuple("SkaterSummary", "number, player, team, pos, gp, g, a, pts, plusminus, pim, pp, sh, gw, ot, s, s_perc, toi_g, sft_g, fo_perc, id")
+'''
+There are many different kinds of tables for Player Stats, the available stats is different from year to year.
 
-SkaterBios = namedtuple("SkaterBios", "number, player, team, pos, dob, birthcity, s_p, country, height, weight, s, draft, rnd, ovrl, rk, gp, g, a, pts, plusminus, pim, toi_g, id")
+In order to find the correct table, we detect the table 'signature', a string of all column namne. Based on that, we look up the correct table.  
+'''
+TABLE_SIGNATURES = [
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,GT,OT,S,S%,TOI/G,Sft/G,FO%', 
+    namedtuple("SkaterSummary", 
+        u"Number, Player, Team, Pos, GP , G, A, P, PlusMinus, PIM, PP, SH, GW, GT, OT, S, SPerc, TOI_G, Sft_G, FOPerc, ID")),
 
-GoalieSummary = namedtuple("GoalieSummary", "number, player, team, gp, gs, w, l, ot, sa, ga, gaa, sv, sv_perc, so, g, a, pim, toi, id")
-     
-GoalieBios = namedtuple("GoalieBios", "number, player, team, dob, birthcity, s_p, country, height,weight, c, rk,draft,rnd,ovrl,gp,w, l, ot, gaa, svs, so, id")
+(u',Player,Team,GP,GS,W,L,T,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
+    namedtuple("GoalieSummary",
+        u"Number, Player, Team, GP, GS, W, L, T, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI, ID")),
+
+(u',Player,Team,GP,GS,W,L,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
+    namedtuple("GoalieSummary2", 
+        u"Number, Player, Team, GP, GS, W, L, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI, ID")),
+
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,OT,S,S%,TOI/G,Sft/G,FO%', 
+    namedtuple("SkaterSummary2",
+        u"Number, Player, Team, Pos, GP, G, A, P, PlusMinus, PIM, PP, SH, GW, OT, S, SPerc, TOI_G, Sft_G, FOPerc, ID")),
+
+(u'#,Player,Team,Pos,DOB,BirthCity,S/P,Ctry,HT,Wt,S,Draft,Rnd,Ovrl,Rk,GP,G,A,Pts,+/-,PIM,TOI/G', namedtuple("SkaterBios",
+    u"Number, Player, Team, Pos, DOB, BirthCity, S_P, Ctry, HT, Wt, S, Draft, Rnd, Ovrl, Rk, GP, G, A, Pts, PlusMinus, PIM, TOI_G, ID")),
+
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,Sv%,SO', namedtuple("GoalieBios1", "Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,SvPerc,SO,ID")),
+
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,Sv%,SO', namedtuple("GoalieBios2","Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,SvPerc,SO,ID"))
+]
 
 
-
-TABLE_MAP = {
-    'skaters' : {
-        'summary' : SkaterSummary,
-        'bios' : SkaterBios
-    },
-    'goalies' : {
-        'bios' : GoalieBios,
-        'summary' : GoalieSummary
-    }
-}
 
 
 PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={}&gameType={}&team=&position={}&country=&status=&viewName={}'
-
-
 URL_MAP = {
     'skaters' : {
         'summary' : {
@@ -63,6 +72,8 @@ URL_MAP = {
 
 class StatsTableReader(reader.TableRowsIterator):
 
+    table_signatures = {}
+
 
     def __init__(self, season, gametype, position, report):
         self.season = season
@@ -72,9 +83,15 @@ class StatsTableReader(reader.TableRowsIterator):
         
         self.url = PLAYER_STATS_URL.format(season, *URL_MAP[position][report][gametype])
 
+        self.table = None
 
-    def get_rowmap(self):
-        return TABLE_MAP[self.position][self.report]
+
+    @property         
+    def row_datamap(self):
+        thead = self.table.find("thead")
+        sig = hashlib.md5(u",".join(map(lambda td:unicode(td.string.strip().replace(" ","")), thead.find_all("th")))).hexdigest()
+        return self.table_signatures[sig]
+
 
 
     def get_pagination_urls(self):
@@ -82,14 +99,8 @@ class StatsTableReader(reader.TableRowsIterator):
         http://www.nhl.com/ice/playerstats.htm
         ''' 
 
-        NHL_BASE_URL = "http://www.nhl.com"
-
-
-        #Load the first page
-        soup = scraper.get_soup(self.url)
-
         #Get all anchors with page links
-        pages = soup.find('div', 'pages')
+        pages = self.soup.find('div', 'pages')
         all_anchors = pages.find_all("a")
         number_of_anchors = len(all_anchors)
         
@@ -102,6 +113,7 @@ class StatsTableReader(reader.TableRowsIterator):
         number_of_pages =  pattern.findall(last_anchor_href)[-1]
 
         #Load all pages
+        NHL_BASE_URL = "http://www.nhl.com"
         urls = []
         for p in range(1,int(number_of_pages)+1):
             page_url = NHL_BASE_URL + last_anchor_href.replace("pg="+number_of_pages,"pg="+str(p) )
@@ -119,12 +131,18 @@ class StatsTableReader(reader.TableRowsIterator):
             except:
                 logging.warning("Could not read {}".format(page))
                 raise StopIteration
+            self.table = table
             yield table 
 
 
 
 
     def readrows(self):
+
+        try:
+            self.soup = scraper.get_soup(self.url)
+        except:
+            raise StopIteration
 
         for table in self.readtables():
             tbody = table.find("tbody")
@@ -135,15 +153,24 @@ class StatsTableReader(reader.TableRowsIterator):
                 yield scraper.readdatacells(row) + [nhl_id] 
 
 
+for sig in TABLE_SIGNATURES:
+    StatsTableReader.table_signatures[hashlib.md5(sig[0]).hexdigest()] = sig[1]
 
 
 def reader(season, gametype="regular", position="skaters", report="bios"):
+
+    if gametype not in ('regular', 'playoff') or position not in ('skaters', 'goalies') or report not in ('bios', 'summary'):
+        return None
+
+
     return StatsTableReader(season, gametype, position, report)
 
 
 
 if __name__ == '__main__':
-    for p in reader("20122013"):
+    reader = reader("20122013", "regular", "goalies", "bios")
+
+    for p in reader.run(3):
         print p
 
 

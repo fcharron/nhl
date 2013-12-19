@@ -33,7 +33,8 @@ class CareerStatsReader(reader.TableRowsIterator):
         self.gametype = "regular" #default
 
 
-    def get_rowmap(self):
+    @property         
+    def row_datamap(self):
         return TABLE_MAP[self.gametype][self.position]
 
 
@@ -84,5 +85,5 @@ def reader(nhl_id):
 
 if __name__ == '__main__':
 
-    for p in reader(8460705):
+    for p in reader(8445386):
         print p
