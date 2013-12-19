@@ -55,6 +55,10 @@ class StatsTableReader(reader.TableRowsIterator):
         self.datamap = None
 
 
+    def fieldnames(self):
+        return self.datamap._fields
+
+
     def update_datamap(self, table):
         thead = table.find("thead")
         sig = hashlib.md5(u",".join(map(lambda td:unicode(td.string.strip().replace(" ","")), thead.find_all("th")))).hexdigest()
@@ -71,6 +75,10 @@ class StatsTableReader(reader.TableRowsIterator):
         pages = self.soup.find('div', 'pages')
         all_anchors = pages.find_all("a")
         number_of_anchors = len(all_anchors)
+
+        #If no pages, return empty list
+        if number_of_anchors < 1:
+            return list()
         
         #Get the last page anchor
         last_anchor = all_anchors[number_of_anchors-1]
@@ -133,7 +141,7 @@ def reader(season, gametype="regular", position="skaters", report="bios"):
 
 
 if __name__ == '__main__':
-    reader = reader("20122013", "regular", "goalies", "bios")
+    reader = reader("20132014", "playoff", "goalies", "bios")
 
     for p in reader.run(3):
         print p
