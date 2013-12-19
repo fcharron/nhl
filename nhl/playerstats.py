@@ -4,41 +4,9 @@ import re
 import logging
 import hashlib 
 
-from collections import namedtuple
-
+import tables
 import scraper
 import reader
-
-
-'''
-There are many different kinds of tables for Player Stats, the available stats is different from year to year.
-
-In order to find the correct table, we detect the table 'signature', a string of all column namne. Based on that, we look up the correct table.  
-'''
-TABLE_SIGNATURES = [
-(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,GT,OT,S,S%,TOI/G,Sft/G,FO%', 
-    namedtuple("SkaterSummary", 
-        u"Number, Player, Team, Pos, GP , G, A, P, PlusMinus, PIM, PP, SH, GW, GT, OT, S, SPerc, TOI_G, Sft_G, FOPerc, ID")),
-
-(u',Player,Team,GP,GS,W,L,T,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
-    namedtuple("GoalieSummary",
-        u"Number, Player, Team, GP, GS, W, L, T, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI, ID")),
-
-(u',Player,Team,GP,GS,W,L,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
-    namedtuple("GoalieSummary2", 
-        u"Number, Player, Team, GP, GS, W, L, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI, ID")),
-
-(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,OT,S,S%,TOI/G,Sft/G,FO%', 
-    namedtuple("SkaterSummary2",
-        u"Number, Player, Team, Pos, GP, G, A, P, PlusMinus, PIM, PP, SH, GW, OT, S, SPerc, TOI_G, Sft_G, FOPerc, ID")),
-
-(u'#,Player,Team,Pos,DOB,BirthCity,S/P,Ctry,HT,Wt,S,Draft,Rnd,Ovrl,Rk,GP,G,A,Pts,+/-,PIM,TOI/G', namedtuple("SkaterBios",
-    u"Number, Player, Team, Pos, DOB, BirthCity, S_P, Ctry, HT, Wt, S, Draft, Rnd, Ovrl, Rk, GP, G, A, Pts, PlusMinus, PIM, TOI_G, ID")),
-
-(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,Sv%,SO', namedtuple("GoalieBios1", "Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,SvPerc,SO,ID")),
-
-(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,Sv%,SO', namedtuple("GoalieBios2","Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,SvPerc,SO,ID"))
-]
 
 
 
@@ -72,7 +40,8 @@ URL_MAP = {
 
 class StatsTableReader(reader.TableRowsIterator):
 
-    table_signatures = {}
+    #Read table signatures as md5 hashes into a dict 
+    table_signatures = {hashlib.md5(k).hexdigest() : v for k,v in tables.SIGNATURES}
 
 
     def __init__(self, season, gametype, position, report):
@@ -83,14 +52,13 @@ class StatsTableReader(reader.TableRowsIterator):
         
         self.url = PLAYER_STATS_URL.format(season, *URL_MAP[position][report][gametype])
 
-        self.table = None
+        self.datamap = None
 
 
-    @property         
-    def row_datamap(self):
-        thead = self.table.find("thead")
+    def update_datamap(self, table):
+        thead = table.find("thead")
         sig = hashlib.md5(u",".join(map(lambda td:unicode(td.string.strip().replace(" ","")), thead.find_all("th")))).hexdigest()
-        return self.table_signatures[sig]
+        self.datamap = self.table_signatures[sig]
 
 
 
@@ -131,7 +99,7 @@ class StatsTableReader(reader.TableRowsIterator):
             except:
                 logging.warning("Could not read {}".format(page))
                 raise StopIteration
-            self.table = table
+            self.update_datamap(table)
             yield table 
 
 
@@ -152,9 +120,6 @@ class StatsTableReader(reader.TableRowsIterator):
                 nhl_id = scraper.get_qp_from_href(row, "id", "/ice/player.htm")
                 yield scraper.readdatacells(row) + [nhl_id] 
 
-
-for sig in TABLE_SIGNATURES:
-    StatsTableReader.table_signatures[hashlib.md5(sig[0]).hexdigest()] = sig[1]
 
 
 def reader(season, gametype="regular", position="skaters", report="bios"):

@@ -32,10 +32,11 @@ class CareerStatsReader(reader.TableRowsIterator):
         self.position = "skater" #default
         self.gametype = "regular" #default
 
+        self.datamap = None
 
-    @property         
-    def row_datamap(self):
-        return TABLE_MAP[self.gametype][self.position]
+
+    def update_datamap(self):
+        self.datamap = TABLE_MAP[self.gametype][self.position]
 
 
     def get_careerstats_tables(self):
@@ -56,7 +57,9 @@ class CareerStatsReader(reader.TableRowsIterator):
 
             h3 = soup.find("h3", text=CAREER_TABLES[table_name])
 
-            self.gametype = table_name            
+            self.gametype = table_name 
+            
+            self.update_datamap()           
 
             yield h3.next_sibling
 

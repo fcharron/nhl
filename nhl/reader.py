@@ -16,7 +16,7 @@ class TableRowsIterator(object):
                 raise StopIteration
             
             try:
-                rowdata = self.row_datamap._make(row)
+                rowdata = self.datamap._make(row)
             except Exception as e:
                 logging.error("Failed to read table row {} : {}".format(row, e.message))
                 raise StopIteration
