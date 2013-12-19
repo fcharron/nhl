@@ -48,4 +48,15 @@ def get_qp_from_href(row, name, href_string):
 
 
          
+def readdatacells(row):
 
+    tds = row.find_all('td')
+    
+    data = []  
+    for td in tds:
+        try: 
+            data.append(td.string.strip())
+        except:
+            data.append(None)
+
+    return data 

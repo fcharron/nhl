@@ -5,64 +5,84 @@ http://www.nhl.com/ice/player.htm
 
 
 '''
-
-from collections import namedtuple
-
-import reader
+import re
 import scraper
+import reader
 
 PLAYER_URL = "http://www.nhl.com/ice/player.htm?id={}"
 
+from collections import namedtuple
 
-GoalieCareerStatsRow = namedtuple("GoalieCareerStatsRow", "season, team, gp, g, w, l, t, ot, so, ga, sa, svs, gaa, min, id")
-
-SkaterCareerStatsRow = namedtuple("SkaterCareerStatsRow", "season, team, gp, g, a, p, plusminus, pim, ppg, shg, gwg, s, s_perc, id")
-
-
-
-class CareerStatsReader(reader.AbstractReader):
-    '''Reads Career Stats from player's bio page''' 
-
-    _tables_headers = {
-        "regular" : "CAREER REGULAR SEASON STATISTICS", 
-        "playoff" : "CAREER PLAYOFF STATISTICS"
-        }
+TABLE_MAP = {
+    'regular' : {
+        'skater' : namedtuple("SkaterCareerStatsRegular", "season, team, gp, g, a, p, plusminus, pim, ppg, shg, gwg, s, s_perc, team_id, gametype"),
+        'goalie' : namedtuple("GoalieCareerStatsRegular", "season, team, gp, w, l, t, ot, so, ga, sa, svs, gaa, min, team_id, gametype")
+    },
+    'playoff' : {
+        'skater' : namedtuple("SkaterCareerStatsPlayoff", "season, team, gp, g, a, p, plusminus, pim, ppg, shg, gwg, s, s_perc, team_id, gametype"),
+        'goalie' : namedtuple("GoalieCareerStatsPlayoff", "season, team, gp, w, l, so, ga, sa, svs, gaa, min, team_id, gametype")    
+    }
+}
 
 
-    def __init__(self, nhl_id, gametype):
-        self.nhl_id = nhl_id
-        self.gametype = gametype
+class CareerStatsReader(reader.TableRowsIterator):
 
-        url = PLAYER_URL.format(str(nhl_id))
-        self.soup = scraper.get_soup(url)
-        
-        self.rowdata = SkaterCareerStatsRow
+    def __init__(self, url):
+        self.url = url     
+        self.position = "skater" #default
+        self.gametype = "regular" #default
 
 
-    def get_row_id(self, row):
-        return scraper.get_qp_from_href(row, "tm", "/ice/playersearch.htm")
+    def get_rowmap(self):
+        return TABLE_MAP[self.gametype][self.position]
 
 
-
-    def _read_tombstone(self):
-
-        tombstone = self.soup.find(id="tombstone")
-        print tombstone
-
-
-
-
-    def readtables(self):
+    def get_careerstats_tables(self):
         '''Returns list of tables to be read'''
 
-        table_header = self.soup.find("h3",
-                        text=self._tables_headers[self.gametype])
+        soup = scraper.get_soup(self.url)
 
-        return [table_header.next_sibling] #We only have one table
-
-
-
-def career_reader(nhl_id, gametype):
-    return CareerStatsReader(nhl_id, gametype)
+        if soup.find(id="tombstone").find(text=re.compile("Goalie")):
+            self.position = "goalie"
 
 
+        CAREER_TABLES = {
+            'regular' : "CAREER REGULAR SEASON STATISTICS",
+            'playoff' :  "CAREER PLAYOFF STATISTICS"
+        }
+
+        for table_name in CAREER_TABLES:
+
+            h3 = soup.find("h3", text=CAREER_TABLES[table_name])
+
+            self.gametype = table_name            
+
+            yield h3.next_sibling
+
+
+    def readrows(self):
+
+        for table in self.get_careerstats_tables():
+            rows = table.find_all("tr")[1:-1]
+
+            for row in rows:
+                team_id = scraper.get_qp_from_href(row, "tm", "/ice/playersearch.htm")
+
+                yield scraper.readdatacells(row) + [team_id, self.gametype]
+
+
+
+
+
+def reader(nhl_id):
+
+    url = PLAYER_URL.format(str(nhl_id))
+
+    return CareerStatsReader(url)
+
+
+
+if __name__ == '__main__':
+
+    for p in reader(8460705):
+        print p
