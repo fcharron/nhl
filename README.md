@@ -8,7 +8,7 @@ Before you use this, please read the NHL.com [terms of service](http://www.nhl.c
 
 ## Getting started
 
-The package is available from [PyPI](https://pypi.python.org/pypi/nhl/2.0), the package index for Python:
+The package is available from [PyPI](https://pypi.python.org/pypi/nhl), the package index for Python:
 
 ```
 pip install nhl
@@ -19,9 +19,9 @@ pip install nhl
 To get [Player Stats](http://www.nhl.com/ice/playerstats.htm?season=20122013&gameType=2&team=&position=S&country=&status=&viewName=summary) for a given season:
 
 ```python
-from nhl import playerstats
+import nhl
 
-reader = playerstats.reader("20132014")
+reader = nhl.playerstats("20132014")
 for s in reader.run(7):
     print s
 
@@ -44,9 +44,9 @@ Note that the kinds of stats are different for skaters and goalies.
 The following gets Peter Forsberg's career stats:
 
 ```python
-from nhl import player
+import nhl
 
-petfor = player.reader(8458520)
+petfor = nhl.careerstats(8458520, "regular")
 for s in petfor:
     print s
 ```
