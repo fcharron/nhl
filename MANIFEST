@@ -2,11 +2,8 @@
 nhlstats.py
 setup.py
 nhl/__init__.py
-nhl/player.py
+nhl/careerstats.py
+nhl/nhlreader.py
 nhl/playerstats.py
-nhl/reader.py
-nhl/scraper.py
-nhl/tables.py
 test/test-player.py
 test/test-playerstats.py
-test/test-scraper.py

@@ -9,7 +9,7 @@ def main():
     if (len(sys.argv) != 5):
         exit()
 
-    reader = nhl.playerstats(*sys.argv[1:])        
+    reader = nhl.stats(*sys.argv[1:])        
 
     writer = csv.writer(sys.stdout)
 
@@ -21,9 +21,7 @@ def main():
     
     
     for s in reader:
-        writer.writerow([s.season, s.gametype, s.nhl_id] + map(encode_for_cl, s.data._asdict().values()))
-
-
+        writer.writerow(s._asdict().values())
 
 
 

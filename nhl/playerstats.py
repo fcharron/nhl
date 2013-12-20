@@ -7,12 +7,14 @@
 import re
 import hashlib
 import logging
+import urllib2
+import urlparse
 
 from collections import namedtuple
+from bs4 import BeautifulSoup
 
-from nhlreader import getsoup, get_qp_from_href, get_rowdata_as_list
+from tablereader import TableReader
 
-PlayerStatsRow = namedtuple("PlayerStatsRow", "season, gametype, nhl_id, data")
 
 PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={}&gameType={}&team=&position={}&country=&status=&viewName={}'
 URL_MAP = {
@@ -40,34 +42,69 @@ URL_MAP = {
     }    
 }
 
+
+class SkaterSummaryWithGT(namedtuple("SkaterSummaryWithGT", "nhl_id, number, player, team, pos, gp , g, a, p, plusminus, pim, pp, sh, gw, gt, ot, s, sperc, toi_g, sft_g, foperc")):    
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = (int,int,str,str,int,int,int,int,int,int,int,int,int,float,str,float,float)
+        return csl(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class SkaterSummary(namedtuple("SkaterSummary", "nhl_id, number, player, team, pos, gp , g, a, p, plusminus, pim, pp, sh, gw, ot, s, sperc, toi_g, sft_g, foperc")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = (int,int,str,str,str,int,int,int,int,int,int,int,int,int,int,int,float,str,float,float)
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class GoalieSummaryWithTies(namedtuple("GoalieSummaryWithTies", "nhl_id, number, player, team, gp, gs, w, l, t, ot, sa, ga, gaa, sv, svperc, so, g, a, pim, toi")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = (int,int,str,str,int,int,int,int,int,int,int,int,float,int,float,int,int,int,int,str)
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class GoalieSummary(namedtuple("GoalieSummary", "nhl_id, number, player, team, gp, gs, w, l, ot, sa, ga, gaa, sv, svperc, so, g, a, pim, toi")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = (int,int,str,str,int,int,int,int,int,int,int,float,int,float,int,int,int,int,str)
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class SkaterBios(namedtuple("SkaterBios", "nhl_id, number, player, team, pos, dob, birthcity, s_p, ctry, ht, wt, s, draft, rnd, ovrl, rk, gp, g, a, pts, plusminus, pim, toi_g")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = [str]*24
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class GoalieBiosWithTies(namedtuple("GoalieBiosWithTies", "nhl_id,number,player,team,dob,birthcity,s_p,ctry,ht,wt,c,rk,draft,rnd,ovrl,gp,w,l,t,ot,gaa,svperc,so")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = [str]*23
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
+class GoalieBios(namedtuple("GoalieBios", "nhl_id,number,player,team,dob,birthcity,s_p,ctry,ht,wt,c,rk,draft,rnd,ovrl,gp,w,l,ot,gaa,svperc,so")):
+    @classmethod
+    def _from_rowdata(cls, nhl_id, data):
+        mapper = [str]*22
+        return cls(*[m(d) for m,d in zip(mapper,[nhl_id]+data)])
+
+
 PLAYERSTATS_TABLE_SIGNATURES = [
-
-(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,GT,OT,S,S%,TOI/G,Sft/G,FO%', 
-    namedtuple("SkaterSummary", 
-        u"Number, Player, Team, Pos, GP , G, A, P, PlusMinus, PIM, PP, SH, GW, GT, OT, S, SPerc, TOI_G, Sft_G, FOPerc")),
-
-(u',Player,Team,GP,GS,W,L,T,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
-    namedtuple("GoalieSummary",
-        u"Number, Player, Team, GP, GS, W, L, T, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI")),
-
-(u',Player,Team,GP,GS,W,L,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
-    namedtuple("GoalieSummary2", 
-        u"Number, Player, Team, GP, GS, W, L, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI")),
-
-(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,OT,S,S%,TOI/G,Sft/G,FO%', 
-    namedtuple("SkaterSummary2",
-        u"Number, Player, Team, Pos, GP, G, A, P, PlusMinus, PIM, PP, SH, GW, OT, S, SPerc, TOI_G, Sft_G, FOPerc")),
-
-(u'#,Player,Team,Pos,DOB,BirthCity,S/P,Ctry,HT,Wt,S,Draft,Rnd,Ovrl,Rk,GP,G,A,Pts,+/-,PIM,TOI/G', namedtuple("SkaterBios",
-    u"Number, Player, Team, Pos, DOB, BirthCity, S_P, Ctry, HT, Wt, S, Draft, Rnd, Ovrl, Rk, GP, G, A, Pts, PlusMinus, PIM, TOI_G")),
-
-(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,Sv%,SO', namedtuple("GoalieBios1", "Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,SvPerc,SO")),
-
-(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,Sv%,SO', namedtuple("GoalieBios2","Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,SvPerc,SO"))
-
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,GT,OT,S,S%,TOI/G,Sft/G,FO%', SkaterSummaryWithGT),
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,OT,S,S%,TOI/G,Sft/G,FO%', SkaterSummary),
+(u',Player,Team,GP,GS,W,L,T,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', GoalieSummaryWithTies),
+(u',Player,Team,GP,GS,W,L,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', GoalieSummary),
+(u'#,Player,Team,Pos,DOB,BirthCity,S/P,Ctry,HT,Wt,S,Draft,Rnd,Ovrl,Rk,GP,G,A,Pts,+/-,PIM,TOI/G', SkaterBios),
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,Sv%,SO', GoalieBiosWithTies),
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,Sv%,SO', GoalieBios)
 ]
 
-class PlayerStatsTable(object):
+NHL_ID_REGEX = re.compile(r"^/ice/player.htm")
+
+class PlayerStats(object):
 
     #Read table signatures as md5 hashes into a dict 
     table_signatures = {hashlib.md5(k).hexdigest() : v for k,v in PLAYERSTATS_TABLE_SIGNATURES}
@@ -79,8 +116,6 @@ class PlayerStatsTable(object):
         self.position = position
         self.report = report
         
-        self.url = PLAYER_STATS_URL.format(season, *URL_MAP[position][report][gametype])
-
         self.datamap = None
 
 
@@ -123,13 +158,26 @@ class PlayerStatsTable(object):
         return urls 
 
 
+    def getsoup(self, url):
+        html = urllib2.urlopen(url).read()
+        return BeautifulSoup(html, 'lxml')
+
+
     def readtables(self):
 
-        soup = getsoup(self.url)
+        url = PLAYER_STATS_URL.format(
+                self.season, 
+                *URL_MAP[self.position][self.report][self.gametype])
 
+        try:
+            soup = self.getsoup(url)
+        except:
+            logging.error("Failed to load from {}".format(url))
+            raise StopIteration
+  
         for page in self.get_pagination_urls(soup):
             try: 
-                soup = getsoup(page)
+                soup = self.getsoup(page)
                 table = soup.find("table", "stats")
             except:
                 logging.warning("Could not read {}".format(page))
@@ -147,11 +195,28 @@ class PlayerStatsTable(object):
             rows = tbody.find_all('tr')
 
             for row in rows:
-                nhl_id = get_qp_from_href(row, "id", "/ice/player.htm")
-                yield PlayerStatsRow(self.season, self.gametype, nhl_id, self.datamap._make(get_rowdata_as_list(row)))
+                
+                anchor_tag = row.find("a", href=NHL_ID_REGEX)
+                if anchor_tag:
+                    qs = urlparse.urlparse(anchor_tag['href']).query
+                    nhl_id = urlparse.parse_qs(qs).get("id", None)[0]
+                else: 
+                    nhl_id = None
+
+                data = [td.string for td in row.find_all("td")]
+
+                yield self.datamap._from_rowdata(nhl_id, data)
+
+
+def stats(season, gametype="regular", position="skaters", report="bios"):
+
+    if gametype not in ('regular', 'playoff') or position not in ('skaters', 'goalies') or report not in ('bios', 'summary'):
+        return None
+
+    return TableReader(PlayerStats(season, gametype, position, report))    
 
 
 if __name__ == '__main__':
 
-     for s in PlayerStatsTable("20132014", "regular", "skaters", "bios").readrows():
+     for s in stats("20132014", "regular", "goalies", "bios"):
         print s

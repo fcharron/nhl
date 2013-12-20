@@ -6,22 +6,23 @@ import unittest
 import nhl
 
 
-PETER_FORSBERG = 8458520 #skater
-COREY_CRAWFORD = 8470645 #goalie
-
 
 ROWS_TO_GET = 7
 
 class TestNhl(unittest.TestCase):
 
-    def test0(self):
-        reader = nhl.careerstats(PETER_FORSBERG)
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+   	def test0(self):
+   		forsberg = nhl.player(8458520)
+   		self.assertTrue(len(forsberg.career().fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
-    def test1(self): 
-        reader = nhl.careerstats(COREY_CRAWFORD)
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+  	def test1(self):
+  		crawford = nhl.player(8470645)
+   		self.assertTrue(len(crawford.career().fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
+
+	def test2(self):
+		kessel = nhl.player(8473548)
+		self.assertEqual(kessel.twitter(), "PKessel81")
 
 
 
