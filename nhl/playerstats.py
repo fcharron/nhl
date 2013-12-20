@@ -1,15 +1,18 @@
-#!/usr/bin/env 
+#!/usr/bin/env python
+'''
+    PLAYER STATS
+
+'''
 
 import re
+import hashlib
 import logging
-import hashlib 
 
-import tables
-import scraper
-import reader
+from collections import namedtuple
 
+from nhlreader import getsoup, get_qp_from_href, get_rowdata_as_list
 
-
+PlayerStatsRow = namedtuple("PlayerStatsRow", "season, gametype, nhl_id, data")
 
 PLAYER_STATS_URL = 'http://www.nhl.com/ice/playerstats.htm?season={}&gameType={}&team=&position={}&country=&status=&viewName={}'
 URL_MAP = {
@@ -37,11 +40,37 @@ URL_MAP = {
     }    
 }
 
+PLAYERSTATS_TABLE_SIGNATURES = [
 
-class StatsTableReader(reader.TableRowsIterator):
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,GT,OT,S,S%,TOI/G,Sft/G,FO%', 
+    namedtuple("SkaterSummary", 
+        u"Number, Player, Team, Pos, GP , G, A, P, PlusMinus, PIM, PP, SH, GW, GT, OT, S, SPerc, TOI_G, Sft_G, FOPerc")),
+
+(u',Player,Team,GP,GS,W,L,T,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
+    namedtuple("GoalieSummary",
+        u"Number, Player, Team, GP, GS, W, L, T, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI")),
+
+(u',Player,Team,GP,GS,W,L,OT,SA,GA,GAA,Sv,Sv%,SO,G,A,PIM,TOI', 
+    namedtuple("GoalieSummary2", 
+        u"Number, Player, Team, GP, GS, W, L, OT, SA, GA, GAA, Sv, SvPerc, SO, G, A, PIM, TOI")),
+
+(u',Player,Team,Pos,GP,G,A,P,+/-,PIM,PP,SH,GW,OT,S,S%,TOI/G,Sft/G,FO%', 
+    namedtuple("SkaterSummary2",
+        u"Number, Player, Team, Pos, GP, G, A, P, PlusMinus, PIM, PP, SH, GW, OT, S, SPerc, TOI_G, Sft_G, FOPerc")),
+
+(u'#,Player,Team,Pos,DOB,BirthCity,S/P,Ctry,HT,Wt,S,Draft,Rnd,Ovrl,Rk,GP,G,A,Pts,+/-,PIM,TOI/G', namedtuple("SkaterBios",
+    u"Number, Player, Team, Pos, DOB, BirthCity, S_P, Ctry, HT, Wt, S, Draft, Rnd, Ovrl, Rk, GP, G, A, Pts, PlusMinus, PIM, TOI_G")),
+
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,Sv%,SO', namedtuple("GoalieBios1", "Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,T,OT,GAA,SvPerc,SO")),
+
+(u'#,Player,Team,DOB,BirthCity,S/P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,Sv%,SO', namedtuple("GoalieBios2","Number,Player,Team,DOB,BirthCity,S_P,Ctry,HT,Wt,C,Rk,Draft,Rnd,Ovrl,GP,W,L,OT,GAA,SvPerc,SO"))
+
+]
+
+class PlayerStatsTable(object):
 
     #Read table signatures as md5 hashes into a dict 
-    table_signatures = {hashlib.md5(k).hexdigest() : v for k,v in tables.SIGNATURES}
+    table_signatures = {hashlib.md5(k).hexdigest() : v for k,v in PLAYERSTATS_TABLE_SIGNATURES}
 
 
     def __init__(self, season, gametype, position, report):
@@ -55,10 +84,6 @@ class StatsTableReader(reader.TableRowsIterator):
         self.datamap = None
 
 
-    def fieldnames(self):
-        return self.datamap._fields
-
-
     def update_datamap(self, table):
         thead = table.find("thead")
         sig = hashlib.md5(u",".join(map(lambda td:unicode(td.string.strip().replace(" ","")), thead.find_all("th")))).hexdigest()
@@ -66,13 +91,13 @@ class StatsTableReader(reader.TableRowsIterator):
 
 
 
-    def get_pagination_urls(self):
+    def get_pagination_urls(self, soup):
         '''Returns list of URLs for paginated tables at:
         http://www.nhl.com/ice/playerstats.htm
         ''' 
 
         #Get all anchors with page links
-        pages = self.soup.find('div', 'pages')
+        pages = soup.find('div', 'pages')
         all_anchors = pages.find_all("a")
         number_of_anchors = len(all_anchors)
 
@@ -100,10 +125,12 @@ class StatsTableReader(reader.TableRowsIterator):
 
     def readtables(self):
 
-        for page in self.get_pagination_urls():
+        soup = getsoup(self.url)
+
+        for page in self.get_pagination_urls(soup):
             try: 
-                soup = scraper.get_soup (page)
-                table = soup.find('table', "stats")
+                soup = getsoup(page)
+                table = soup.find("table", "stats")
             except:
                 logging.warning("Could not read {}".format(page))
                 raise StopIteration
@@ -115,38 +142,16 @@ class StatsTableReader(reader.TableRowsIterator):
 
     def readrows(self):
 
-        try:
-            self.soup = scraper.get_soup(self.url)
-        except:
-            raise StopIteration
-
         for table in self.readtables():
             tbody = table.find("tbody")
             rows = tbody.find_all('tr')
 
             for row in rows:
-                nhl_id = scraper.get_qp_from_href(row, "id", "/ice/player.htm")
-                yield scraper.readdatacells(row) + [nhl_id] 
-
-
-
-def reader(season, gametype="regular", position="skaters", report="bios"):
-
-    if gametype not in ('regular', 'playoff') or position not in ('skaters', 'goalies') or report not in ('bios', 'summary'):
-        return None
-
-
-    return StatsTableReader(season, gametype, position, report)
-
+                nhl_id = get_qp_from_href(row, "id", "/ice/player.htm")
+                yield PlayerStatsRow(self.season, self.gametype, nhl_id, self.datamap._make(get_rowdata_as_list(row)))
 
 
 if __name__ == '__main__':
-    reader = reader("20132014", "playoff", "goalies", "bios")
 
-    for p in reader.run(3):
-        print p
-
-
-
-
-
+     for s in PlayerStatsTable("20132014", "regular", "skaters", "bios").readrows():
+        print s

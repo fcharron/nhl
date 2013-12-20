@@ -3,7 +3,7 @@
 
 import unittest
 
-from nhl import player
+import nhl
 
 
 PETER_FORSBERG = 8458520 #skater
@@ -15,11 +15,11 @@ ROWS_TO_GET = 7
 class TestNhl(unittest.TestCase):
 
     def test0(self):
-        reader = player.reader(PETER_FORSBERG)
+        reader = nhl.careerstats(PETER_FORSBERG)
         self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
     def test1(self): 
-        reader = player.reader(COREY_CRAWFORD)
+        reader = nhl.careerstats(COREY_CRAWFORD)
         self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
 

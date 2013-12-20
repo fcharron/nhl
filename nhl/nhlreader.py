@@ -1,20 +1,21 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-'''scraper.py
-
-Utility functions for reading tables. 
+#!/usr/bin/env 
 
 '''
 
-from bs4 import BeautifulSoup
-import urllib2
+
+'''
 import re
 import logging
+import urllib2
 import urlparse
 
 
+from bs4 import BeautifulSoup
 
-def get_soup(url):
+
+
+
+def getsoup(url):
     '''Returns a BeautifulSoup object from the given URL'''
 
     try: 
@@ -25,6 +26,7 @@ def get_soup(url):
         raise e
 
     return soup  
+
 
 
 def get_qp_from_href(row, name, href_string):
@@ -47,16 +49,17 @@ def get_qp_from_href(row, name, href_string):
             return param[0]  
 
 
-         
-def readdatacells(row):
-
-    tds = row.find_all('td')
-    
+def get_rowdata_as_list(row):
+    '''Returns the content of the <td> cells as a list'''
     data = []  
-    for td in tds:
+    for td in row.find_all('td'):
         try: 
             data.append(td.string.strip())
         except:
             data.append(None)
 
     return data 
+
+
+
+
