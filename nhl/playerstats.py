@@ -2,7 +2,6 @@
 '''
 Reads Player stats tables at nhl.com. 
 
-
 Example usage
 
     ps = PlayerStats()
@@ -288,17 +287,17 @@ class PlayerStats(object):
                                         self._position, report)
 
 
-    def _read_all_tables(self):
+    def _readtables(self):
         '''Reads all tables; often the table is paginated into several tables on different URLs.''' 
 
         url = self._buildurl()
-        table = self.gettable(url)
+        table = self._gettable(url)
         self.rowbuilder = make_rowbuilder(table)
         
         yield table
 
         for url in self._get_pagination_urls(table.select("tfoot.paging a")):
-            table = self.gettable(url)
+            table = self._gettable(url)
 
             yield table 
 

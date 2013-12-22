@@ -21,8 +21,12 @@ To get [Player Stats](http://www.nhl.com/ice/playerstats.htm?season=20122013&gam
 ```python
 import nhl
 
-reader = nhl.PlayerStats().season("20132014")
-for s in reader.run(7):
+reader = nhl.PlayerStats()
+reader.season("20132014")
+reader.position("skaters")
+reader.report("bios")
+
+for s in reader.readrows():
     print s
 
 ```        
@@ -48,7 +52,7 @@ import nhl
 
 petfor = nhl.Player(8458520).load()
 
-for s in petfor.stats():
+for s in petfor.regular_stats():
     print s
 ```
 
