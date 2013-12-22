@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 PLAYER CAREER STATS
 
@@ -22,6 +24,7 @@ class NhlPlayerException(Exception):
 
 
 PLAYER_URL = "http://www.nhl.com/ice/player.htm?id={}"
+
 
 TEAM_ID_REGEX = re.compile(r"^/ice/playersearch.htm")
 
@@ -50,29 +53,7 @@ ROWBUILDERS = {
 }
 
 
-def gettable(soup, header, rowbuilder):
-    '''Loads the tables'''
-    h3 = soup.find("h3", text=header)
 
-    table = h3.next_sibling
-
-    rowdata = []    
-    for row in table.find_all("tr")[1:-1]:
-
-        anchor_tag = row.find("a", href=TEAM_ID_REGEX)
-        if anchor_tag:
-            qs = urlparse.urlparse(anchor_tag['href']).query
-            team_id = urlparse.parse_qs(qs).get("tm", None)[0]
-        else: 
-            team_id = None
-
-        data = [team_id] + [td.string for td in row.find_all("td")]
-
-        formatted_data = [formatters.DEFAULT_FORMATTERS[k](v) for k,v in zip(rowbuilder._fields, data)]
-       
-        rowdata.append(rowbuilder._make(formatted_data))
-
-    return rowdata
 
 
 
@@ -84,6 +65,35 @@ class Player(object):
         self.pos = "skater"
         self.soup = None
         self._tombstone = None
+
+    
+    def gettable(self, header, rowbuilder):
+        '''Loads the tables'''
+
+        if self.soup is None:
+            self.load()
+
+        h3 = self.soup.find("h3", text=header)
+
+        table = h3.next_sibling
+
+        rowdata = []    
+        for row in table.find_all("tr")[1:-1]:
+
+            anchor_tag = row.find("a", href=TEAM_ID_REGEX)
+            if anchor_tag:
+                qs = urlparse.urlparse(anchor_tag['href']).query
+                team_id = urlparse.parse_qs(qs).get("tm", None)[0]
+            else: 
+                team_id = None
+
+            data = [team_id] + [td.string for td in row.find_all("td")]
+
+            formatted_data = [formatters.DEFAULT_FORMATTERS[k](v) for k,v in zip(rowbuilder._fields, data)]
+           
+            rowdata.append(rowbuilder._make(formatted_data))
+
+        return rowdata        
 
 
     def load(self):
@@ -104,16 +114,14 @@ class Player(object):
         return self
 
 
-    def stats(self, gametype="regular"):
-        
-        if gametype not in ('regular', 'playoff'):
-            return None
-        
-        rowbuilder = ROWBUILDERS[gametype][self.pos]
-        
-        return gettable(self.soup, 
-                        re.compile("^CAREER {}".format(gametype.upper())), 
-                        rowbuilder)
+    def playoff_stats(self):
+        return self.gettable(re.compile("^CAREER PLAYOFF"), 
+                ROWBUILDERS['playoff'][self.pos])
+
+
+    def regular_stats(self):
+        return self.gettable(re.compile("^CAREER REGULAR"), 
+                ROWBUILDERS['regular'][self.pos])
 
 
     def tombstone(self):
@@ -123,6 +131,9 @@ class Player(object):
 
     def twitter(self):
         '''gets the players twitter handle or None'''
+        if self.soup is None:
+            self.load()
+
         bio_info = self.soup.find(class_="bioInfo")
         twitter_tag = bio_info.find(class_="twitter-follow-button")
         if twitter_tag is not None:
@@ -133,10 +144,15 @@ class Player(object):
 
 if __name__ == '__main__':
 
-    nhl_player = Player(8458520).load()
+    nhl_player = Player(8458520)
 
     print nhl_player.twitter()
 
-    for stats in nhl_player.stats('playoff'):
+    career = nhl_player.regular_stats() + nhl_player.playoff_stats() 
+
+    for stats in career:
         print stats        
     
+
+
+

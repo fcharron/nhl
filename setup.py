@@ -1,8 +1,8 @@
 from distutils.core import setup
 setup(name='nhl',
-      version='2.0.1',
+      version='2.1',
       packages=['nhl'],
-      scripts=['nhlstats.py'],
+      scripts=['nhlstats.py', 'nhlplayer.py'],
       description='Reads stats from nhl.com',
       author='Peter Stark',
       author_email='peterstark72@gmail.com',

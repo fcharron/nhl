@@ -26,6 +26,8 @@ def minutes_as_time(s):
     if s:
         min_str, sec_str = None,None
         minutes, seconds = 0,0
+        
+        #check for seconds
         if ":" in s:
             min_str, sec_str = s.split(":")
             seconds = int(sec_str)
@@ -33,6 +35,7 @@ def minutes_as_time(s):
             #We only have minutes
             min_str = s 
 
+        #check for 1,000 seconds            
         if "," in min_str:
             t, d = min_str.split(",")
             minutes += int(t)*1000 
@@ -42,8 +45,9 @@ def minutes_as_time(s):
 
         return datetime.timedelta(seconds=seconds,minutes=minutes)
 
+
 def season(s):
-    '''Coverts 2012-2013 into 20122013'''
+    '''Convert 2012-2013 to 20122013, or None'''
     if s:
         return u"".join(s.strip().split("-"))
 
