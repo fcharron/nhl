@@ -21,19 +21,19 @@ To get [Player Stats](http://www.nhl.com/ice/playerstats.htm?season=20122013&gam
 ```python
 import nhl
 
-reader = nhl.playerstats("20132014")
+reader = nhl.PlayerStats().season("20132014")
 for s in reader.run(7):
     print s
 
 ```        
 
-The following parameters are avilable on ```playerstats.reader``` in order to get different kinds of stats.
+The following parameters are avilable on ```PlayerStats()``` in order to get different kinds of stats.
 
 
-* ```season``` - e.g. "20122013"
-* ```gametype``` - 'regular' | 'playoff'
-* ```position``` - 'skaters' | 'goalies'
-* ```report``` - 'summary' | 'bios'
+* ```season()``` - e.g. "20122013"
+* ```gametype()``` - 'regular' | 'playoff'
+* ```position()``` - 'skaters' | 'goalies'
+* ```report()``` - 'summary' | 'bios'
 
 
 Note that the kinds of stats are different for skaters and goalies.
@@ -46,8 +46,9 @@ The following gets Peter Forsberg's career stats:
 ```python
 import nhl
 
-petfor = nhl.careerstats(8458520, "regular")
-for s in petfor:
+petfor = nhl.Player(8458520).load()
+
+for s in petfor.stats():
     print s
 ```
 
