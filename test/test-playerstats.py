@@ -6,56 +6,51 @@ import unittest
 import nhl
 
 
-TESTS = [
-("20132014", "regular", "skaters", "summary"),
-("20132014", "regular", "goalies", "summary"),
-("20132014", "regular", "skaters", "bios"),
-("20132014", "regular", "goalies", "bios"),
-("19971998", "regular", "skaters", "summary"),
-("19971998", "regular", "goalies", "summary"),
-("19971998", "regular", "skaters", "bios"),
-("19971998", "regular", "goalies", "bios")
-]
-
-ROWS_TO_GET = 3
 
 class TestNhl(unittest.TestCase):
 
-    def test_wrong_arg(self):
-        reader = nhl.playerstats.reader("20122013", gametype="foo")
-        self.assertFalse(reader)
+    
+    def test_many(self):
+        stats = nhl.PlayerStats()
+        stats.season("20132014")
+        stats.report("summary")
+        stats.position("skaters")
+        stats.gametype("regular")
 
-    def test0(self):
-        reader = nhl.playerstats.reader(*TESTS[0])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+        self.assertEqual(len(stats.fetch(42)), 42)
 
-    def test1(self): 
-        reader = nhl.playerstats.reader(*TESTS[1])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
-    def test2(self): 
-        reader = nhl.playerstats.reader(*TESTS[2])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+    def test_onepage(self):
+        stats = nhl.PlayerStats()
+        stats.season("20122013")
+        stats.report("summary")
+        stats.position("goalies")
+        stats.gametype("playoff")
 
-    def test4(self): 
-        reader = nhl.playerstats.reader(*TESTS[3])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+        self.assertEqual(len(stats.fetch()), 23)
 
-    def test5(self):
-        reader = nhl.playerstats.reader(*TESTS[4])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
 
-    def test6(self): 
-        reader = nhl.playerstats.reader(*TESTS[5])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+    def test_skaters_summary_playoff_1314(self):
+        stats = nhl.PlayerStats()
+        stats.season("20132014")
+        stats.report("summary")
+        stats.position("skaters")
+        stats.gametype("playoff")
 
-    def test7(self): 
-        reader = nhl.playerstats.reader(*TESTS[6])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+        self.assertEqual(len(stats.fetch()), 0)
 
-    def test8(self): 
-        reader = nhl.playerstats.reader(*TESTS[7])
-        self.assertEqual(len(reader.fetch(ROWS_TO_GET)), ROWS_TO_GET)
+
+
+    def test_skaters_summary_regular_9798(self):
+        stats = nhl.PlayerStats()
+        stats.season("19971998")
+        stats.report("summary")
+        stats.position("skaters")
+        stats.gametype("regular")
+
+        self.assertTrue(len(stats.fetch(42)))
+
+
 
 
 if __name__ == '__main__': 

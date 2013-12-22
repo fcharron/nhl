@@ -6,10 +6,10 @@ import csv
 
 def main():
 
-    if (len(sys.argv) != 5):
-        exit()
 
-    reader = nhl.stats(*sys.argv[1:])        
+    pstats = nhl.PlayerStats()
+
+    pstats.season(sys.argv[1])
 
     writer = csv.writer(sys.stdout)
 
@@ -20,7 +20,7 @@ def main():
             return v
     
     
-    for s in reader:
+    for s in pstats:
         writer.writerow(s._asdict().values())
 
 
