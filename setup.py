@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='nhl',
-      version='2.1',
+      version='2.1.1',
       packages=['nhl'],
       scripts=['nhlstats.py', 'nhlplayer.py'],
       description='Reads stats from nhl.com',

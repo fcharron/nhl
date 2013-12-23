@@ -29,9 +29,9 @@ PLAYER_URL = "http://www.nhl.com/ice/player.htm?id={}"
 TEAM_ID_REGEX = re.compile(r"^/ice/playersearch.htm")
 
 
-GOALIE_CAREER_REGULAR_COLS = 'team_id', 'season', 'team', 'gp', 'w', 'l', 't', 'ot', 'so',  'ga', 'sa', 'svperc', 'gaa', 'min'
-GOALIE_CAREER_PLAYOFF_COLS = 'team_id', 'season', 'team', 'gp', 'w', 'l', 'so', 'ga', 'sa', 'svperc', 'gaa','min'
-SKATER_CAREER_REGULAR_COLS = 'team_id', 'season', 'team', 'gp', 'g', 'a', 'p','plusminus', 'pim', 'ppg', 'shg', 'gwg', 's', 'sperc'
+GOALIE_CAREER_REGULAR_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'w', 'l', 't', 'ot', 'so',  'ga', 'sa', 'svperc', 'gaa', 'min'
+GOALIE_CAREER_PLAYOFF_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'w', 'l', 'so', 'ga', 'sa', 'svperc', 'gaa','min'
+SKATER_CAREER_REGULAR_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'g', 'a', 'p','plusminus', 'pim', 'ppg', 'shg', 'gwg', 's', 'sperc'
 SKATER_CAREER_PLAYOFF_COLS = SKATER_CAREER_REGULAR_COLS
 
 
@@ -67,15 +67,20 @@ class Player(object):
         self._tombstone = None
 
     
-    def gettable(self, header, rowbuilder):
-        '''Loads the tables'''
+    def gettable(self, table_name):        
+        '''Loads the table
 
-        if self.soup is None:
-            self.load()
+        table_name - 'regular' or 'playoff'
 
-        h3 = self.soup.find("h3", text=header)
+        '''
+        try:
+            h3 = self.soup.find("h3", 
+                text=re.compile("^CAREER {}".format(table_name).upper()))
+            table = h3.next_sibling
+        except Exception:
+            raise NhlPlayerException("Could not find table. Is player loaded?")
 
-        table = h3.next_sibling
+        rowbuilder = ROWBUILDERS[table_name][self.pos]
 
         rowdata = []    
         for row in table.find_all("tr")[1:-1]:
@@ -87,7 +92,7 @@ class Player(object):
             else: 
                 team_id = None
 
-            data = [team_id] + [td.string for td in row.find_all("td")]
+            data = [table_name, team_id] + [td.string for td in row.find_all("td")]
 
             formatted_data = [formatters.DEFAULT_FORMATTERS[k](v) for k,v in zip(rowbuilder._fields, data)]
            
@@ -115,13 +120,11 @@ class Player(object):
 
 
     def playoff_stats(self):
-        return self.gettable(re.compile("^CAREER PLAYOFF"), 
-                ROWBUILDERS['playoff'][self.pos])
+        return self.gettable('playoff')
 
 
     def regular_stats(self):
-        return self.gettable(re.compile("^CAREER REGULAR"), 
-                ROWBUILDERS['regular'][self.pos])
+        return self.gettable('regular')
 
 
     def tombstone(self):
@@ -144,9 +147,7 @@ class Player(object):
 
 if __name__ == '__main__':
 
-    nhl_player = Player(8458520)
-
-    print nhl_player.twitter()
+    nhl_player = Player(8458520).load()
 
     career = nhl_player.regular_stats() + nhl_player.playoff_stats() 
 

@@ -9,7 +9,7 @@ DEFAULT_FORMATTERS = {
     'player' : unicode_or_none,
     'team' : unicode_or_none,
     'pos' : unicode_or_none,#position
-
+    'position' : unicode,#position
 
     #Skaters Summary
     'gp' : int_or_none, #games played

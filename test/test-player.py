@@ -6,24 +6,29 @@ import unittest
 import nhl
 
 
-class TestNhl(unittest.TestCase):
+class PlayerTestsMixin(object):
+    def setUp(self):
+        self.player = nhl.Player(self.NHL_ID).load()
+ 
+    def test_regular_stats(self):
+         self.assertTrue(self.player.regular_stats())
 
-    def test_old_player(self):
-        forsberg = nhl.Player(8458520)
-        self.assertTrue(forsberg.regular_stats())
+    def test_playoff_stats(self):
+         self.assertTrue(self.player.playoff_stats())
 
-    def test_old_goalie(self): 
-        pelle = nhl.Player(8448853)
-        self.assertTrue(pelle.regular_stats())        
-    
-    def test_crawford(self):
-        crawford = nhl.Player(8470645)
-        self.assertTrue(crawford.regular_stats())
 
-    def test_kessel(self):
-        kessel = nhl.Player(8473548)
-        self.assertEqual(kessel.twitter(), "PKessel81")
 
+class TestOldPlayer(PlayerTestsMixin, unittest.TestCase):
+    NHL_ID = 8458520
+
+class TestOldGoalie(PlayerTestsMixin, unittest.TestCase):
+    NHL_ID = 8448853
+
+class TestCrawford(PlayerTestsMixin, unittest.TestCase):
+    NHL_ID = 8470645
+
+class TestKessel(PlayerTestsMixin, unittest.TestCase):
+    NHL_ID = 8473548
 
 
 

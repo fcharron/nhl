@@ -13,10 +13,10 @@ def main():
 
     writer = csv.writer(sys.stdout)
 
-    for c in ('regular', 'playoff'):
-    	for stat in player.stats(c):
-        	writer.writerow(stat._asdict().values())
+    career = player.regular_stats() + player.playoff_stats()
 
+    for stat in career:
+        writer.writerow(stat._asdict().values())
 
 
 if __name__ == '__main__':
