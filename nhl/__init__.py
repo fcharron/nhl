@@ -1,2 +1,2 @@
-from player import Player
-from playerstats import PlayerStats
+import player
+import playerstats

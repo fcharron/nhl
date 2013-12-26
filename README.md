@@ -19,20 +19,20 @@ pip install nhl
 To get [Player Stats](http://www.nhl.com/ice/playerstats.htm?season=20122013&gameType=2&team=&position=S&country=&status=&viewName=summary) for a given season:
 
 ```python
-import nhl
+from nhl import playerstats
 
-reader = nhl.PlayerStats()
-reader.season("20132014")
-reader.position("skaters")
-reader.report("bios")
+q = playerstats.Query()
+q.season("20132014")
+q.gametype("regular")
+q.position("goalies")
+q.report("bios")
 
-for s in reader.readrows():
-    print s
+for row in q.run():
+    print row
 
 ```        
 
-The following parameters are avilable on ```PlayerStats()``` in order to get different kinds of stats.
-
+The following parameters can be set on ```Query()``` in order to get different kinds of stats.
 
 * ```season()``` - e.g. "20122013"
 * ```gametype()``` - 'regular' | 'playoff'
@@ -48,11 +48,11 @@ Note that the kinds of stats are different for skaters and goalies.
 The following gets Peter Forsberg's career stats:
 
 ```python
-import nhl
+from nhl import player as nhl_player
 
-petfor = nhl.Player(8458520).load()
+petfor = nhl_player.get(8458520)
 
-for s in petfor.regular_stats():
+for s in petfor.regular_stats:
     print s
 ```
 

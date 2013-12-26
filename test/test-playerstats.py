@@ -3,53 +3,61 @@
 
 import unittest
 
-import nhl
+from nhl import playerstats
 
 
 
 class TestNhl(unittest.TestCase):
 
-    
     def test_many(self):
-        stats = nhl.PlayerStats()
-        stats.season("20132014")
-        stats.report("summary")
-        stats.position("skaters")
-        stats.gametype("regular")
+        q = playerstats.Query()
+        q.season("20132014")
+        q.report("summary")
+        q.position("skaters")
+        q.gametype("regular")
 
-        self.assertEqual(len(stats.fetch(42)), 42)
+        self.assertEqual(len(q.fetch(101)), 101)
 
 
     def test_onepage(self):
-        stats = nhl.PlayerStats()
-        stats.season("20122013")
-        stats.report("summary")
-        stats.position("goalies")
-        stats.gametype("playoff")
+        q = playerstats.Query()
+        q.season("20122013")
+        q.report("summary")
+        q.position("goalies")
+        q.gametype("playoff")
 
-        self.assertEqual(len(stats.fetch()), 23)
-
-
-    def test_skaters_summary_playoff_1314(self):
-        stats = nhl.PlayerStats()
-        stats.season("20132014")
-        stats.report("summary")
-        stats.position("skaters")
-        stats.gametype("playoff")
-
-        self.assertEqual(len(stats.fetch()), 0)
+        self.assertEqual(len(q.fetch()), 23)
 
 
+    def test_goalies_regular(self):
+        q = playerstats.Query()
+        q.season("20132014")
+        q.report("bios")
+        q.position("goalies")
+        q.gametype("regular")
 
-    def test_skaters_summary_regular_9798(self):
-        stats = nhl.PlayerStats()
-        stats.season("19971998")
-        stats.report("summary")
-        stats.position("skaters")
-        stats.gametype("regular")
+        self.assertEqual(len(q.fetch()), 78)
 
-        self.assertTrue(len(stats.fetch(42)))
 
+    def test_empty(self):
+        q = playerstats.Query()
+        q.season("20132014")
+        q.report("summary")
+        q.position("skaters")
+        q.gametype("playoff")
+
+        self.assertEqual(len(q.fetch()), 0)
+
+
+
+    def test_old(self):
+        q = playerstats.Query()
+        q.season("19971998")
+        q.report("summary")
+        q.position("skaters")
+        q.gametype("regular")
+
+        self.assertTrue(len(q.fetch(42)))
 
 
 

@@ -8,13 +8,17 @@ import nhl
 
 class PlayerTestsMixin(object):
     def setUp(self):
-        self.player = nhl.Player(self.NHL_ID).load()
- 
+        self.player = nhl.player.get(self.NHL_ID)
+
     def test_regular_stats(self):
-         self.assertTrue(self.player.regular_stats())
+         self.assertTrue(self.player.regular_stats)
 
     def test_playoff_stats(self):
-         self.assertTrue(self.player.playoff_stats())
+         self.assertTrue(self.player.playoff_stats)
+
+    def test_tombstone(self):
+         self.assertTrue(self.player.tombstone)
+
 
 
 

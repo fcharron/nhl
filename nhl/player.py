@@ -9,15 +9,20 @@ PLAYER CAREER STATS
 
 '''
 import re
-import logging
 import urllib2
-import urlparse
 from collections import namedtuple
 
 from bs4 import BeautifulSoup
 
-
 import formatters
+
+DATA_MAP = {
+    'integers' : ('gp', 'g', 'a', 'p', 'pts', 'plusminus', 'pim', 'pp', 'sh', 'gw', 'gt', 'ot', 'nhl_id', 'number', 'ppg', 'shg', 'gwg', 'gs', 'ga', 'sv', 'l', 'w', 't', 'sa', 'so', 'ht', 'wt', 'draft', 'rnd', 'ovrl'),
+    'floats' : ('sperc', 'foperc', 'gaa', 'svperc', 'sftg'),
+    'minutes' : ('toig', 'toi', 'min')
+}
+formatter = formatters.Formatter(DATA_MAP)
+
 
 class NhlPlayerException(Exception):
     pass
@@ -26,134 +31,118 @@ class NhlPlayerException(Exception):
 PLAYER_URL = "http://www.nhl.com/ice/player.htm?id={}"
 
 
-TEAM_ID_REGEX = re.compile(r"^/ice/playersearch.htm")
+class StatsTable(object):
+
+    TEAM_ID_REGEX = re.compile(r"^/ice/playersearch.htm")
 
 
-GOALIE_CAREER_REGULAR_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'w', 'l', 't', 'ot', 'so',  'ga', 'sa', 'svperc', 'gaa', 'min'
-GOALIE_CAREER_PLAYOFF_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'w', 'l', 'so', 'ga', 'sa', 'svperc', 'gaa','min'
-SKATER_CAREER_REGULAR_COLS = 'gametype', 'team_id', 'season', 'team', 'gp', 'g', 'a', 'p','plusminus', 'pim', 'ppg', 'shg', 'gwg', 's', 'sperc'
-SKATER_CAREER_PLAYOFF_COLS = SKATER_CAREER_REGULAR_COLS
+    def __init__(self, page):
+        h3 = page.find("h3", text=re.compile("^CAREER {}".format(self.gametype).upper()))
+        self.table = h3.next_sibling
 
 
-GoalieCareerRegularStats = namedtuple("GoalieCareerRegularStats", GOALIE_CAREER_REGULAR_COLS)
-GoalieCareerPlayoffStats = namedtuple("GoalieCareerPlayoffStats", GOALIE_CAREER_PLAYOFF_COLS)
-SkaterCareerRegularStats = namedtuple("SkaterCareerRegularStats",SKATER_CAREER_REGULAR_COLS)
-SkaterCareerPlayoffStats = namedtuple("SkaterCareerPlayoffStats",SKATER_CAREER_PLAYOFF_COLS)
+    def make_rowdataclass(self):
+        '''Returns a namedtuple class with the table's column names, plus gametype and team ID'''
+        column_names = [th.string.lower().replace("+/-","plusminus").replace("%","perc") for th in self.table.find("tr").find_all("th")]
+
+        return namedtuple("CareerStats", column_names)
 
 
-ROWBUILDERS = {
-    'regular' : {
-        'goalie' : GoalieCareerRegularStats, 
-        'skater' : SkaterCareerRegularStats
-    },
-    'playoff' : {
-        'goalie' : GoalieCareerPlayoffStats, 
-        'skater' : SkaterCareerPlayoffStats
-    }
-}
+    def readrows(self):
+
+        rowdataclass = self.make_rowdataclass()
+
+        for row in self.table.find_all("tr")[1:-1]:
+
+            data = [td.string for td in row.find_all("td")]
+
+            formatted_data = [formatter.format(k, v) for k,v in zip(rowdataclass._fields, data)]
+
+            yield rowdataclass._make(formatted_data)
+
+
+    def __iter__(self):
+        return self.readrows()
 
 
 
 
+class RegularStatsTable(StatsTable):
+    gametype = "REGULAR"
+
+class PlayoffStatsTable(StatsTable):
+    gametype = "PLAYOFF"
 
 
-class Player(object):
-    '''Represent an NHL player on nhl.com'''
 
-    def __init__(self, nhl_id):
-        self.nhl_id = nhl_id        
-        self.pos = "skater"
-        self.soup = None
-        self._tombstone = None
-
-    
-    def gettable(self, table_name):        
-        '''Loads the table
-
-        table_name - 'regular' or 'playoff'
-
-        '''
-        try:
-            h3 = self.soup.find("h3", 
-                text=re.compile("^CAREER {}".format(table_name).upper()))
-            table = h3.next_sibling
-        except Exception:
-            raise NhlPlayerException("Could not find table. Is player loaded?")
-
-        rowbuilder = ROWBUILDERS[table_name][self.pos]
-
-        rowdata = []    
-        for row in table.find_all("tr")[1:-1]:
-
-            anchor_tag = row.find("a", href=TEAM_ID_REGEX)
-            if anchor_tag:
-                qs = urlparse.urlparse(anchor_tag['href']).query
-                team_id = urlparse.parse_qs(qs).get("tm", None)[0]
-            else: 
-                team_id = None
-
-            data = [table_name, team_id] + [td.string for td in row.find_all("td")]
-
-            formatted_data = [formatters.DEFAULT_FORMATTERS[k](v) for k,v in zip(rowbuilder._fields, data)]
-           
-            rowdata.append(rowbuilder._make(formatted_data))
-
-        return rowdata        
+class Tombstone(object):
+    def __init__(self, page):
+        self.tombstone = page.find(id="tombstone")
 
 
-    def load(self):
-
-        url = PLAYER_URL.format(self.nhl_id)
-
-        try:
-            html = urllib2.urlopen(url).read()
-            self.soup = BeautifulSoup(html, 'lxml')
-        except Exception as e:
-            raise NhlPlayerException("Could not load {} : {}".format(url,
-                                                        e.message))
-
-        self._tombstone = self.soup.find(id="tombstone")            
-        if self._tombstone.find(text=re.compile("Goalie")):
-            self.pos = "goalie"
-
-        return self
+    def position(self):
+        if self.tombstone.find(text=re.compile("Goalie")):
+            return "goalie"
 
 
-    def playoff_stats(self):
-        return self.gettable('playoff')
 
-
-    def regular_stats(self):
-        return self.gettable('regular')
-
-
-    def tombstone(self):
-        '''Not yet supported'''
-        return self._tombstone
-
-
-    def twitter(self):
-        '''gets the players twitter handle or None'''
-        if self.soup is None:
-            self.load()
-
-        bio_info = self.soup.find(class_="bioInfo")
+class Twitter(object):
+    def __init__(self, page):
+        self.handle = None
+        bio_info = page.find(class_="bioInfo")
         twitter_tag = bio_info.find(class_="twitter-follow-button")
         if twitter_tag is not None:
-            return twitter_tag['href'].split("/")[-1]
+            self.handle = twitter_tag['href'].split("/")[-1]
 
+
+
+class PlayerPage(object):
+    '''Represent an NHL player on nhl.com'''
+
+    def __init__(self, soup):
+        self.soup = soup
+
+    @property
+    def regular_stats(self):
+        return RegularStatsTable(self.soup)
+
+    @property
+    def playoff_stats(self):
+        return PlayoffStatsTable(self.soup)
+
+    @property
+    def tombstone(self):
+        '''Not yet supported'''
+        return Tombstone(self.soup)
+
+    @property
+    def twitter(self):
+        '''gets the players twitter handle or None'''
+        return Twitter(self.soup)
+
+
+
+def get(nhl_id):
+    url = PLAYER_URL.format(nhl_id)
+    try:
+        html = urllib2.urlopen(url).read()
+        soup = BeautifulSoup(html, 'lxml')
+    except Exception as e:
+        raise NhlPlayerException("Could not load {} : {}".format(url,
+                                                    e.message))
+
+    return PlayerPage(soup)
 
 
 
 if __name__ == '__main__':
 
-    nhl_player = Player(8458520).load()
+    import itertools 
 
-    career = nhl_player.regular_stats() + nhl_player.playoff_stats() 
+    nhl_player = get(8458520)
 
-    for stats in career:
+    for stats in itertools.chain(nhl_player.regular_stats, nhl_player.playoff_stats):
         print stats        
-    
 
 
 
