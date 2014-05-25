@@ -3,6 +3,8 @@ The Python NHL Reader
 
 A Python module for getting player stats from nhl.com. 
 
+Version 3.0 uses [lxml](http://lxml.de) for parsing which is much faster than the previously used BeautifulSoup library. 
+
 Before you use this, please read the NHL.com [terms of service](http://www.nhl.com/ice/page.htm?id=26389). In essence, you can download content FOR PERSONAL USE ONLY.  
 
 
@@ -25,7 +27,7 @@ q = nhl.Query()
 q.season("20132014")
 q.regular()
 q.position("G")
-q.report("bios")
+q.bios()
 
 for row in q.run():
     print row
@@ -45,9 +47,19 @@ The following parameters can be set on ```Query()``` in order to get different k
 Note that the kinds of stats are different for skaters and goalies.
 
 
-## Career Stats
+## Player
 
-TBD
+To get the stats tables for a specific player, you must know the player's NHL ID. Get the player's page with ´´´Player()``` and the tables are available in a list as ```tables```.
+
+```python
+ player = Player(8471685)
+
+    print player.twitter
+
+    for row in player.tables[0]:
+        print row
+
+```
 
 
 
