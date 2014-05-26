@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''nhl.py
-
+'''playerstats.py
 
 Example usage:
 
@@ -12,44 +11,17 @@ Example usage:
     for n, p in enumerate(q):
         print n, p
 
-
 '''
 
-from urllib2 import urlopen
 from urllib import urlencode
 from urllib2 import urlparse
-from lxml import etree
 import re
 
+from commons import getdoc
+from commons import stringify
 
-__author__ = "Peter N Stark"
-__version__ = "3.0"
 
 PLAYERSTATS_URL = "http://www.nhl.com/ice/playerstats.htm"
-PLAYER_CAREER_URL = "http://www.nhl.com/ice/player.htm?id={}"
-
-
-class NhlPlayerStatsException(Exception):
-    pass
-
-
-PAGES = {}
-
-
-def getdoc(url):
-    '''Returns the HTML DOM as an etree Elementree'''
-    if url not in PAGES:
-        response = urlopen(url)
-        content = response.read().decode('utf-8')
-        parser = etree.HTMLParser()
-        PAGES[url] = etree.fromstring(content, parser)
-
-    return PAGES[url]
-
-
-def stringify(element):
-    '''Concatenates all text in the subelements into one string'''
-    return u"".join([x for x in element.itertext()])
 
 
 def get_nhlid_from_tablerow(tr):
@@ -62,20 +34,17 @@ def get_nhlid_from_tablerow(tr):
         return urlparse.parse_qs(qs).get("id", None)[0]
 
 
-def cleanup_columnname(name):
-    clean_name = name.strip().lower().replace("+/-", "plusminus").replace("%", "perc").replace("/", "").replace("#", "number").replace(" ", "")
-    return clean_name
-
-
 def get_table_columns(table):
-    '''Returns the column names for the table'''
+    '''Returns the column names for the table.
+    We skips first col, as it's only the row number.
+    We add NHL ID and Number columns in the beginnnig.
+    '''
     thead = table.find("thead")
-    columns = map(cleanup_columnname,
-                  [stringify(th) for th in thead.findall(".//th")])
+    columns = [stringify(th) for th in thead.findall(".//th")]
     return ['nhl_id', 'number'] + columns[1:]
 
 
-def get_page_urls(url):
+def get_table_pages_urls(url):
     '''Gets URLS for pages of the table at the given URL'''
 
     doc = getdoc(url)
@@ -143,43 +112,6 @@ def readrows(urls, limit=None):
             row_counter += 1
 
 
-class Player(object):
-    '''Represent an NHL player on nhl.com'''
-
-    def __init__(self, player_id):
-        url = PLAYER_CAREER_URL.format(player_id)
-        self.doc = getdoc(url)
-
-    @property
-    def twitter(self):
-        '''gets the players twitter handle or None'''
-        twitter_tag = self.doc.find(".//a[@class='twitter-follow-button']")
-        if twitter_tag is not None:
-            return twitter_tag.get("href").split("/")[-1]
-
-    @property
-    def tables(self):
-
-        playerstats_tables = []
-
-        for table in self.doc.findall(".//table[@class='data playerStats']"):
-
-            headers = [th.text for th in table.findall(".//th")]
-
-            table_group = []
-            table_group.append(headers)
-
-            for row in table.findall(".//tr")[1:]:
-
-                data = [stringify(td) for td in row.findall("td")]
-
-                table_group.append(data)
-
-            playerstats_tables.append(table_group)
-
-        return playerstats_tables
-
-
 class Query:
     '''Query for playerstats'''
 
@@ -234,7 +166,7 @@ class Query:
         return url
 
     def run(self, limit=None):
-        urls = get_page_urls(self.url())
+        urls = get_table_pages_urls(self.url())
         return readrows(urls, limit)
 
     def fetch(self, limit=None):
@@ -248,10 +180,9 @@ class Query:
 
 
 if __name__ == '__main__':
+    q = Query()
 
-    player = Player(8471685)
+    q.season("20132014").playoffs().position("G").bios()
 
-    print player.twitter
-
-    for row in player.tables[0]:
+    for row in q.run():
         print row

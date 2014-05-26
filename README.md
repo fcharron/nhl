@@ -49,7 +49,7 @@ Note that the kinds of stats are different for skaters and goalies.
 
 ## Player
 
-To get the stats tables for a specific player, you must know the player's NHL ID. Get the player's page with ´´´Player()``` and the tables are available in a list as ```tables```.
+To get the stats tables for a specific player, you must know the player's NHL ID. Get the player's page with ```Player()``` and the tables are available in a list as ```tables```.
 
 ```python
  player = Player(8471685)
