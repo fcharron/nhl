@@ -73,12 +73,12 @@ Note that the kinds of stats are different for skaters and goalies.
 To get the stats tables for a specific player, you must know the player's NHL ID. Get the player's page with ```Player()``` and the tables are available in a list as ```tables```.
 
 ```python
- player = Player(8471685)
+player = Player(8471685)
 
-    print player.twitter
+print player.twitter
 
-    for row in player.tables[0]:
-        print row
+for row in player.tables[0]:
+    print row
 
 ```
 
