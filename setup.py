@@ -1,13 +1,12 @@
 from distutils.core import setup
 setup(name='nhl',
-      version='2.2',
+      version='3.0',
       packages=['nhl'],
-      scripts=['nhlstats.py', 'nhlplayer.py'],
       description='Reads stats from nhl.com',
       author='Peter Stark',
       author_email='peterstark72@gmail.com',
       url='https://github.com/peterstark72/nhl',
-      requires=['bs4','lxml'],
+      requires=['lxml'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
