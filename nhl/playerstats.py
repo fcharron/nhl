@@ -123,12 +123,11 @@ class Query:
             self.season = s
         return self
 
-    def regular(self):
-        self.gameType = 2
-        return self
-
-    def playoffs(self):
-        self.gameType = 3
+    def gametype(self, gt):
+        if gt == 'regular':
+            self.gameType = 2
+        elif gt == 'playoffs':
+            self.gameType = 3
         return self
 
     def team(self, t):
@@ -146,12 +145,9 @@ class Query:
             self.position = p
         return self
 
-    def summary(self):
-        self.viewName = 'summary'
-        return self
-
-    def bios(self):
-        self.viewName = 'bios'
+    def report(self, r):
+        if r in ('bios', 'summary'):
+            self.viewName = r
         return self
 
     def url(self):
@@ -182,7 +178,7 @@ class Query:
 if __name__ == '__main__':
     q = Query()
 
-    q.season("20132014").playoffs().position("G").bios()
+    q.season("20132014").gametype('playoffs').position("G").report('summary')
 
     for row in q.run():
         print row

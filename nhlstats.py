@@ -5,39 +5,50 @@
 
 A command line tool for readings stats from nhl.com.
 
+Example usage:
+
+nhlstats.py 20132014 -g playoffs
+
 
 '''
 
+import argparse
 import csv
 import sys
 import nhl
 
 
-writer = csv.writer(sys.stdout)
-
-
-def writerow(row):
-    writer.writerow(map(lambda x: x.encode('utf-8'), row))
-
-
 def main():
 
-    args_len = len(sys.argv)
+    parser = argparse.ArgumentParser(description='Read playerstats from nhl.com')
+    parser.add_argument('seasons', metavar='Seasons',
+                        help='an integer for the accumulator')
+    parser.add_argument('-p', '--pos', dest='position',
+                        action='store',
+                        default="S",
+                        choices=('S', 'G', 'D', 'L', 'R', 'C'),
+                        help='Player position')
+    parser.add_argument('-g', '--gametype', dest='gametype',
+                        action='store',
+                        default="regular",
+                        choices=('regular', 'playoffs'),
+                        help='Gametype')
+    parser.add_argument('-r', '--report', dest='report',
+                        action='store',
+                        default="summary",
+                        choices=('bios', 'summary'),
+                        help='Report')
+    args = parser.parse_args()
 
-    if args_len == 3 and sys.argv[1] == "player":
+    q = nhl.Query()
+    q.season(args.seasons)
+    q.gametype(args.gametype)
+    q.position(args.position)
+    q.report(args.report)
 
-        player_id = sys.argv[2]
-
-        for tbl in nhl.Player(player_id).tables:
-            for row in tbl:
-                writerow(row)
-    else:
-        q = nhl.Query()
-
-        q.season("20132014").playoffs().position("S").summary()
-
-        for row in q.run():
-            writerow(row)
+    writer = csv.writer(sys.stdout)
+    for row in q.run():
+        writer.writerow(map(lambda x: x.encode('utf-8'), row))
 
 
 if __name__ == '__main__':
