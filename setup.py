@@ -1,6 +1,7 @@
 from distutils.core import setup
+
 setup(name='nhl',
-      version='3.0',
+      version='3.1',
       packages=['nhl'],
       scripts=['nhlstats.py'],
       description='Reads stats from nhl.com',
@@ -14,7 +15,6 @@ setup(name='nhl',
           'License :: Free for non-commercial use',
           'Natural Language :: English',
           'Operating System :: MacOS :: MacOS X',
-          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.4',
           'Topic :: Utilities'
-          ],
-      )
+      ])

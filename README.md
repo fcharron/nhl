@@ -3,7 +3,7 @@ The Python NHL Reader
 
 A Python module for getting player stats from nhl.com. 
 
-Version 3.0 uses [lxml](http://lxml.de) for parsing which is much faster than the previously used BeautifulSoup library. 
+Version 3.1 uses [lxml](http://lxml.de) for parsing which is much faster than the previously used BeautifulSoup library.
 
 Before you use this, please read the NHL.com [terms of service](http://www.nhl.com/ice/page.htm?id=26389). In essence, you can download content FOR PERSONAL USE ONLY.  
 
