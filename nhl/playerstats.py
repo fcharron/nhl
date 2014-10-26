@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''playerstats.py
+"""playerstats.py
 
 Example usage:
 
@@ -11,10 +11,10 @@ Example usage:
     for n, p in enumerate(q):
         print n, p
 
-'''
+"""
 
-from urllib import urlencode
-from urllib2 import urlparse
+from urllib.parse import urlencode, parse_qs
+from urllib.request import urlparse
 import re
 
 from commons import getdoc
@@ -25,27 +25,28 @@ PLAYERSTATS_URL = "http://www.nhl.com/ice/playerstats.htm"
 
 
 def get_nhlid_from_tablerow(tr):
-    '''Get player ID from href inside the row'''
+    """Get player ID from href inside the row"""
     anchor_tag = tr.find(".//a[@href]")
+
     if anchor_tag is not None:
         href = anchor_tag.attrib['href']
-    if re.match(r"^/ice/player.htm", href):
-        qs = urlparse.urlparse(href).query
-        return urlparse.parse_qs(qs).get("id", None)[0]
+        if re.match(r"^/ice/player.htm", href):
+            qs = urlparse(href).query
+            return parse_qs(qs).get("id", None)[0]
 
 
 def get_table_columns(table):
-    '''Returns the column names for the table.
+    """Returns the column names for the table.
     We skips first col, as it's only the row number.
     We add NHL ID and Number columns in the beginnnig.
-    '''
+    """
     thead = table.find("thead")
     columns = [stringify(th) for th in thead.findall(".//th")]
     return ['nhl_id', 'number'] + columns[1:]
 
 
 def get_table_pages_urls(url):
-    '''Gets URLS for pages of the table at the given URL'''
+    """Gets URLS for pages of the table at the given URL"""
 
     doc = getdoc(url)
 
@@ -71,17 +72,17 @@ def get_table_pages_urls(url):
     number_of_pages = pattern.findall(last_anchor_href)[-1]
 
     #Load all pages
-    NHL_BASE_URL = "http://www.nhl.com"
+    nhl_base_url = "http://www.nhl.com"
     for p in range(1, int(number_of_pages) + 1):
         page_url = last_anchor_href.replace("pg=" + number_of_pages,
                                             "pg=" + str(p))
-        urls.append(NHL_BASE_URL + page_url)
+        urls.append(nhl_base_url + page_url)
 
     return urls
 
 
 def readrows(urls, limit=None):
-    '''Reads all or a limited numbers of rows from the table'''
+    """Reads all or a limited numbers of rows from the table"""
 
     row_counter = 0
     for url in urls:
@@ -113,14 +114,22 @@ def readrows(urls, limit=None):
 
 
 class Query:
-    '''Query for playerstats'''
+    """Query for playerstats"""
+
+    def __init__(self):
+        self.season2 = None
+        self.gameType = None
+        self.team = None
+        self.country = None
+        self.position2 = None
+        self.viewName = None
 
     def __str__(self):
         return self.url()
 
     def season(self, s):
         if re.match(r"\d{8}", s):
-            self.season = s
+            self.season2 = s
         return self
 
     def gametype(self, gt):
@@ -142,7 +151,7 @@ class Query:
 
     def position(self, p):
         if p in ("S", "C", "D", "F", "G", "L", "R"):
-            self.position = p
+            self.position2 = p
         return self
 
     def report(self, r):
@@ -151,7 +160,7 @@ class Query:
         return self
 
     def url(self):
-        '''Builds the URL based on parameters'''
+        """Builds the URL based on parameters"""
         if self.position == 'G' and self.viewName == 'bios':
             self.viewName = 'goalieBios'
 
@@ -181,4 +190,4 @@ if __name__ == '__main__':
     q.season("20132014").gametype('playoffs').position("G").report('summary')
 
     for row in q.run():
-        print row
+        print(row)

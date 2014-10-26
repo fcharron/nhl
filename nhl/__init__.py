@@ -5,4 +5,4 @@ from player import Player
 from playerstats import Query
 
 __author__ = "Peter N Stark"
-__version__ = "3.0"
+__version__ = "3.1"

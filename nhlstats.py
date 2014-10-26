@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''nhlstats.py
+"""nhlstats.py
 
 A command line tool for readings stats from nhl.com.
 
@@ -10,7 +10,7 @@ Example usage:
 nhlstats.py 20132014 -g playoffs
 
 
-'''
+"""
 
 import argparse
 import csv
