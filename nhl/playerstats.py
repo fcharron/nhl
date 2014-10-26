@@ -121,29 +121,29 @@ class Query:
 
     def season(self, s):
         if re.match(r"\d{8}", s):
-            self.season2 = s
+            self.season = s
         return self
 
     def gametype(self, gt):
         if gt == 'regular':
-            self.gameType2 = 2
+            self.gameType = 2
         elif gt == 'playoffs':
-            self.gameType2 = 3
+            self.gameType = 3
         return self
 
     def team(self, t):
         if re.match(r"[A-Z]{3}", t):
-            self.team2 = t
+            self.team = t
         return self
 
     def country(self, c):
         if re.match(r"[A-Z]{3}", c):
-            self.country2 = c
+            self.country = c
         return self
 
     def position(self, p):
         if p in ("S", "C", "D", "F", "G", "L", "R"):
-            self.position2 = p
+            self.position = p
         return self
 
     def report(self, r):
@@ -153,7 +153,7 @@ class Query:
 
     def url(self):
         """Builds the URL based on parameters"""
-        if self.position2 == 'G' and self.viewName == 'bios':
+        if self.position == 'G' and self.viewName == 'bios':
             self.viewName = 'goalieBios'
 
         query = self.__dict__
