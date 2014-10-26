@@ -116,14 +116,6 @@ def readrows(urls, limit=None):
 class Query:
     """Query for playerstats"""
 
-    def __init__(self):
-        self.season2 = None
-        self.gameType = None
-        self.team = None
-        self.country = None
-        self.position2 = None
-        self.viewName = None
-
     def __str__(self):
         return self.url()
 
@@ -134,19 +126,19 @@ class Query:
 
     def gametype(self, gt):
         if gt == 'regular':
-            self.gameType = 2
+            self.gameType2 = 2
         elif gt == 'playoffs':
-            self.gameType = 3
+            self.gameType2 = 3
         return self
 
     def team(self, t):
         if re.match(r"[A-Z]{3}", t):
-            self.team = t
+            self.team2 = t
         return self
 
     def country(self, c):
         if re.match(r"[A-Z]{3}", c):
-            self.country = c
+            self.country2 = c
         return self
 
     def position(self, p):
@@ -161,7 +153,7 @@ class Query:
 
     def url(self):
         """Builds the URL based on parameters"""
-        if self.position == 'G' and self.viewName == 'bios':
+        if self.position2 == 'G' and self.viewName == 'bios':
             self.viewName = 'goalieBios'
 
         query = self.__dict__
