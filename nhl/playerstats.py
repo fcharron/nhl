@@ -17,8 +17,8 @@ from urllib.parse import urlencode, parse_qs
 from urllib.request import urlparse
 import re
 
-from commons import getdoc
-from commons import stringify
+from .commons import getdoc
+from .commons import stringify
 
 
 PLAYERSTATS_URL = "http://www.nhl.com/ice/playerstats.htm"

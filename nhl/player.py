@@ -16,8 +16,8 @@ Example usage:
 
 """
 
-from commons import getdoc
-from commons import stringify
+from .commons import getdoc
+from .commons import stringify
 
 PLAYER_CAREER_URL = "http://www.nhl.com/ice/player.htm?id={}"
 
